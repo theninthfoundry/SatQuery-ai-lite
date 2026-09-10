@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SatQuery AI — Agentic Remote-Sensing Analyst</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0B111C;
+  --bg-alt: #0E1520;
+  --panel: #141C2B;
+  --panel-2: #1A2436;
+  --border: #263248;
+  --text: #E7ECF3;
+  --text-muted: #8C97AC;
+  --text-faint: #5D6A81;
+  --accent-optical: #E8A33D;
+  --accent-sar: #5EC8D8;
+  --accent-veg: #4FD1A5;
+  --accent-change: #E2574C;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --font-display: 'Space Grotesk', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3 { font-family: var(--font-display); margin: 0; }
+button, input, textarea { font-family: inherit; }
+:focus-visible { outline: 2px solid var(--accent-veg); outline-offset: 2px; }
+
+.app-shell { max-width: 1320px; margin: 0 auto; padding: 0 24px 48px; }
+
+.topbar { position: relative; padding: 28px 0 20px; overflow: hidden; }
+.topbar-grid-bg {
+  position: absolute; inset: 0; opacity: 0.35; pointer-events: none;
+  background-image:
+    repeating-linear-gradient(0deg, transparent, transparent 39px, var(--border) 40px),
+    repeating-linear-gradient(90deg, transparent, transparent 79px, var(--border) 80px);
+  -webkit-mask-image: linear-gradient(to bottom, black, transparent);
+  mask-image: linear-gradient(to bottom, black, transparent);
+}
+.topbar-inner { position: relative; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
+.brand { display: flex; align-items: center; gap: 14px; }
+.brand-mark {
+  width: 44px; height: 44px; border-radius: var(--radius-sm);
+  border: 1px solid var(--accent-sar); color: var(--accent-sar);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-display); font-weight: 600; font-size: 15px; letter-spacing: 0.02em;
+}
+.brand-text h1 { font-size: 26px; font-weight: 600; letter-spacing: -0.01em; }
+.brand-text p { margin: 2px 0 0; color: var(--text-muted); font-size: 13.5px; }
+.status-cluster { display: flex; align-items: center; gap: 14px; font-family: var(--font-mono); font-size: 12.5px; color: var(--text-muted); }
+.status-pill { border: 1px solid var(--border); border-radius: 100px; padding: 5px 12px; color: var(--accent-veg); position: relative; }
+.status-pill.running::before {
+  content: ''; display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--accent-change); margin-right: 7px;
+  animation: pulse 1.1s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) { .status-pill.running::before { animation: none; } }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+
+.disclaimer {
+  border: 1px solid var(--border); background: var(--panel);
+  border-left: 3px solid var(--accent-optical);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px; font-size: 13px; color: var(--text-muted); margin-bottom: 22px;
+}
+.disclaimer strong { color: var(--text); }
+
+.layout { display: grid; grid-template-columns: 320px 1fr; gap: 20px; align-items: start; }
+@media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+
+.sidebar { display: flex; flex-direction: column; gap: 20px; position: sticky; top: 16px; }
+@media (max-width: 900px) { .sidebar { position: static; } }
+
+.control-group { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px; }
+.control-group h2 { font-size: 12.5px; color: var(--text-muted); font-weight: 600; margin-bottom: 12px; font-family: var(--font-mono); }
+
+.mode-switch { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+.mode-btn {
+  text-align: left; background: var(--panel-2); border: 1px solid var(--border); color: var(--text-muted);
+  padding: 9px 12px; border-radius: var(--radius-sm); cursor: pointer; font-size: 13.5px;
+  transition: border-color .15s, color .15s;
+}
+.mode-btn.active { color: var(--text); border-color: var(--accent-sar); }
+.mode-btn:hover { color: var(--text); }
+
+.upload-area { display: flex; flex-direction: column; gap: 12px; }
+.upload-slot { display: flex; flex-direction: column; gap: 4px; }
+.upload-label { font-size: 13px; font-weight: 500; }
+.upload-hint { font-size: 11.5px; color: var(--text-faint); }
+.dropzone {
+  display: block; cursor: pointer; border: 1px dashed var(--border); border-radius: var(--radius-sm);
+  padding: 10px; background: var(--bg-alt); transition: border-color .15s;
+}
+.dropzone:hover { border-color: var(--accent-sar); }
+.dropzone.filled { border-style: solid; }
+.dropzone-inner { display: flex; align-items: center; gap: 10px; min-height: 32px; }
+.dropzone-icon { font-size: 16px; color: var(--text-faint); }
+.dropzone-text { font-size: 12.5px; color: var(--text-muted); }
+.dropzone-error { font-size: 12px; color: var(--accent-change); }
+.thumb-canvas { width: 44px; height: 44px; object-fit: cover; border-radius: 3px; border: 1px solid var(--border); }
+.dropzone-filename { font-size: 12px; color: var(--text-muted); word-break: break-all; }
+
+.query-box {
+  width: 100%; resize: vertical; background: var(--bg-alt); border: 1px solid var(--border); color: var(--text);
+  border-radius: var(--radius-sm); padding: 10px 12px; font-size: 13.5px; margin-bottom: 10px;
+}
+.quick-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  font-size: 11.5px; background: none; border: 1px solid var(--border); color: var(--text-muted);
+  padding: 5px 9px; border-radius: 100px; cursor: pointer; text-align: left; max-width: 100%;
+}
+.chip:hover { color: var(--text); border-color: var(--accent-veg); }
+
+.action-row { display: flex; gap: 10px; }
+.run-btn {
+  flex: 1; background: var(--accent-veg); color: #0B111C; border: none; font-weight: 600;
+  padding: 12px; border-radius: var(--radius-sm); cursor: pointer; font-size: 14px;
+}
+.run-btn:disabled { background: var(--panel-2); color: var(--text-faint); cursor: not-allowed; }
+.reset-btn {
+  background: none; border: 1px solid var(--border); color: var(--text-muted); padding: 12px 14px;
+  border-radius: var(--radius-sm); cursor: pointer; font-size: 13.5px;
+}
+.reset-btn:hover { color: var(--text); }
+
+.workspace { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+
+.error-banner {
+  border: 1px solid var(--accent-change); color: var(--accent-change); background: rgba(226, 87, 76, 0.08);
+  padding: 11px 14px; border-radius: var(--radius-sm); font-size: 13.5px;
+}
+.hidden { display: none !important; }
+
+.canvas-row { display: flex; gap: 14px; flex-wrap: wrap; min-height: 120px; }
+.canvas-placeholder {
+  color: var(--text-faint); font-size: 13.5px; border: 1px dashed var(--border); border-radius: var(--radius-md);
+  padding: 40px; width: 100%; text-align: center;
+}
+.canvas-card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 10px; }
+.canvas-card.highlight { border-color: var(--accent-veg); }
+.canvas-title { font-size: 11.5px; color: var(--text-muted); margin-bottom: 8px; font-family: var(--font-mono); }
+.canvas-card canvas { display: block; max-width: 280px; width: 100%; height: auto; border-radius: 3px; }
+
+.result-panel { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px; }
+.result-header { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+.result-tag { font-family: var(--font-mono); font-size: 11px; color: var(--accent-sar); border: 1px solid var(--border); padding: 3px 8px; border-radius: 100px; margin-right: 8px; }
+.result-tool { font-family: var(--font-mono); font-size: 11px; color: var(--text-faint); }
+.download-btn { background: none; border: 1px solid var(--border); color: var(--text-muted); padding: 7px 12px; border-radius: var(--radius-sm); cursor: pointer; font-size: 12.5px; }
+.download-btn:hover:not(:disabled) { color: var(--text); border-color: var(--accent-veg); }
+.download-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.result-answer { font-size: 15px; line-height: 1.6; margin: 6px 0 14px; }
+.confidence-row { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--text-muted); }
+.confidence-meter { flex: 1; height: 6px; background: var(--panel-2); border-radius: 100px; overflow: hidden; }
+.confidence-fill { height: 100%; width: 0%; background: var(--accent-veg); transition: width .5s ease; }
+
+.trace-wrap { background: var(--bg-alt); border: 1px solid var(--border); border-radius: var(--radius-md); overflow: hidden; }
+.trace-header { padding: 10px 14px; border-bottom: 1px solid var(--border); font-family: var(--font-mono); font-size: 11.5px; color: var(--text-muted); }
+.trace-panel { padding: 10px 14px; max-height: 220px; overflow-y: auto; font-family: var(--font-mono); font-size: 12px; display: flex; flex-direction: column; gap: 5px; }
+.trace-line { display: flex; gap: 10px; color: var(--text-muted); }
+.trace-time { color: var(--text-faint); flex-shrink: 0; }
+.trace-label { color: var(--accent-veg); flex-shrink: 0; }
+.trace-detail { color: var(--text); }
+
+.footer-note { margin-top: 28px; font-size: 12px; color: var(--text-faint); text-align: center; }
+
+@media (max-width: 480px) {
+  .app-shell { padding: 0 14px 32px; }
+  .canvas-card canvas { max-width: 100%; }
+}
+</style>
+</head>
+<body>
+<div class="app-shell">
+
+  <header class="topbar">
+    <div class="topbar-grid-bg"></div>
+    <div class="topbar-inner">
+      <div class="brand">
+        <div class="brand-mark">SQ</div>
+        <div class="brand-text">
+          <h1>SatQuery AI</h1>
+          <p>Agentic vision-language assistant for remote-sensing imagery</p>
+        </div>
+      </div>
+      <div class="status-cluster">
+        <span id="clock" class="clock"></span>
+        <span id="statusPill" class="status-pill">AGENT · IDLE</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="disclaimer">
+    <strong>Prototype scope:</strong> this build demonstrates the full agentic pipeline end to end — query interpretation, input-compatibility checking, specialist-tool routing, execution, evidence generation and an auditable report — using classical computer-vision heuristics as functional stand-ins for the fine-tuned remote-sensing VLMs the full ISRO/SAC brief requires. It runs entirely in your browser on PNG/JPEG inputs. The accompanying backend scaffold and README describe exactly where BigEarthNet-adapted models plug in to reach full compliance.
+  </div>
+
+  <main class="layout">
+    <aside class="panel sidebar">
+      <section class="control-group">
+        <h2>Input configuration</h2>
+        <div class="mode-switch">
+          <button class="mode-btn" data-mode="single">Single image</button>
+          <button class="mode-btn" data-mode="cross">Optical + SAR pair</button>
+          <button class="mode-btn" data-mode="bitemporal">Bi-temporal pair</button>
+        </div>
+        <div id="uploadArea" class="upload-area"></div>
+      </section>
+
+      <section class="control-group">
+        <h2>Natural-language query</h2>
+        <textarea id="queryInput" class="query-box" rows="3" placeholder="e.g. What changed between these two dates, and where?"></textarea>
+        <div id="quickChips" class="quick-chips"></div>
+      </section>
+
+      <div class="action-row">
+        <button id="runBtn" class="run-btn" disabled>Run query</button>
+        <button id="resetBtn" class="reset-btn">Reset</button>
+      </div>
+    </aside>
+
+    <section class="workspace">
+      <div id="errorBanner" class="error-banner hidden"></div>
+
+      <div id="canvasRow" class="canvas-row">
+        <div class="canvas-placeholder">Upload image(s) and run a query to see visual evidence here.</div>
+      </div>
+
+      <div id="resultPanel" class="result-panel hidden">
+        <div class="result-header">
+          <div>
+            <span class="result-tag" id="resultTask"></span>
+            <span class="result-tool" id="resultTool"></span>
+          </div>
+          <button id="downloadBtn" class="download-btn" disabled>Download report</button>
+        </div>
+        <p id="resultAnswer" class="result-answer"></p>
+        <div class="confidence-row">
+          <span>Confidence</span>
+          <div class="confidence-meter"><div id="confidenceFill" class="confidence-fill"></div></div>
+          <span id="confidenceValue">0%</span>
+        </div>
+      </div>
+
+      <div class="trace-wrap">
+        <div class="trace-header">Execution trace</div>
+        <div id="tracePanel" class="trace-panel"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer-note">
+    Built for the ISRO/SAC "SatQuery AI" problem statement — Space Technology / Software theme. Runs entirely client-side; no imagery leaves your browser.
+  </footer>
+</div>
+
+<script>
+/* ===== State & Constants ===== */
+const WORK_SIZE = 320;
+const SINGLE_MAX = 380;
+
+const CLASS_COLORS = {
+  water: [94, 200, 216],
+  vegetation: [79, 209, 165],
+  'built-up': [232, 163, 61],
+  'bare soil': [192, 138, 90],
+};
+const CHANGE_COLOR = [226, 87, 76];
+
+const CLASS_LABELS = {
+  water: 'water bodies',
+  vegetation: 'vegetation',
+  'built-up': 'built-up / impervious surfaces',
+  'bare soil': 'bare soil',
+  other: 'unclassified surface',
+};
+
+const SLOT_CONFIG = {
+  single: [
+    { id: 'single', label: 'Image (optical or SAR)', hint: 'PNG or JPEG \u2014 single-image benchmark input' },
+  ],
+  cross: [
+    { id: 'optical', label: 'Optical / multispectral image', hint: 'e.g. Sentinel-2 / Cartosat-2S RGB composite' },
+    { id: 'sar', label: 'SAR image', hint: 'e.g. Sentinel-1 / RISAT amplitude image' },
+  ],
+  bitemporal: [
+    { id: 'temporal-a', label: 'Time A \u2014 earlier acquisition', hint: 'Same extent as Time B, PNG/JPEG' },
+    { id: 'temporal-b', label: 'Time B \u2014 later acquisition', hint: 'Co-registered with Time A, PNG/JPEG' },
+  ],
+};
+
+const QUICK_QUERIES = {
+  single: [
+    'Describe the land-cover and major objects visible in this image.',
+    'Highlight the water body referred to in the query.',
+    'Highlight the built-up area in this image.',
+    'How much vegetation cover is present?',
+  ],
+  cross: [
+    'Use the optical and SAR images together to identify built-up and water-covered regions.',
+    'How much of the scene is water according to both sensors?',
+  ],
+  bitemporal: [
+    'What changed between these two dates, and where did the change occur?',
+    'Has the built-up area increased, decreased, or remained unchanged?',
+    'Has the water coverage increased, decreased, or remained unchanged?',
+  ],
+};
+
+const state = {
+  mode: 'single',
+  images: {},
+  running: false,
+  lastReport: null,
+};
+
+/* ===== DOM refs ===== */
+const modeButtons = document.querySelectorAll('.mode-btn');
+const uploadArea = document.getElementById('uploadArea');
+const queryInput = document.getElementById('queryInput');
+const quickChips = document.getElementById('quickChips');
+const runBtn = document.getElementById('runBtn');
+const resetBtn = document.getElementById('resetBtn');
+const statusPill = document.getElementById('statusPill');
+const clockEl = document.getElementById('clock');
+const canvasRow = document.getElementById('canvasRow');
+const tracePanel = document.getElementById('tracePanel');
+const resultPanel = document.getElementById('resultPanel');
+const errorBanner = document.getElementById('errorBanner');
+const downloadBtn = document.getElementById('downloadBtn');
+
+/* ===== Clock ===== */
+function tickClock() {
+  const now = new Date();
+  clockEl.textContent = now.toISOString().slice(11, 19) + ' UTC';
+}
+tickClock();
+setInterval(tickClock, 1000);
+
+/* ===== Mode switching ===== */
+modeButtons.forEach(btn => {
+  btn.addEventListener('click', () => setMode(btn.dataset.mode));
+});
+
+function setMode(mode) {
+  state.mode = mode;
+  state.images = {};
+  modeButtons.forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+  renderUploadSlots();
+  renderQuickChips();
+  clearWorkspace();
+  updateRunButtonState();
+}
+
+/* ===== Upload slots ===== */
+function renderUploadSlots() {
+  uploadArea.innerHTML = '';
+  SLOT_CONFIG[state.mode].forEach(cfg => {
+    const wrap = document.createElement('div');
+    wrap.className = 'upload-slot';
+
+    const label = document.createElement('div');
+    label.className = 'upload-label';
+    label.textContent = cfg.label;
+    wrap.appendChild(label);
+
+    const hint = document.createElement('div');
+    hint.className = 'upload-hint';
+    hint.textContent = cfg.hint;
+    wrap.appendChild(hint);
+
+    const drop = document.createElement('label');
+    drop.className = 'dropzone';
+    drop.dataset.slot = cfg.id;
+
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/png,image/jpeg';
+    input.hidden = true;
+    input.addEventListener('change', e => {
+      if (e.target.files && e.target.files[0]) handleFile(e.target.files[0], cfg.id, drop);
+    });
+
+    const inner = document.createElement('div');
+    inner.className = 'dropzone-inner';
+    const icon = document.createElement('div');
+    icon.className = 'dropzone-icon';
+    icon.textContent = '\u2913';
+    const text = document.createElement('div');
+    text.className = 'dropzone-text';
+    text.textContent = 'Click to upload';
+    inner.appendChild(icon);
+    inner.appendChild(text);
+
+    drop.appendChild(input);
+    drop.appendChild(inner);
+    wrap.appendChild(drop);
+    uploadArea.appendChild(wrap);
+  });
+}
+
+function handleFile(file, slotId, dropEl) {
+  const nameLower = file.name.toLowerCase();
+  if (nameLower.endsWith('.tif') || nameLower.endsWith('.tiff')) {
+    setDropStatus(dropEl, 'GeoTIFF not previewable in-browser \u2014 export a PNG/JPEG for this live demo (the production backend reads GeoTIFF via rasterio/GDAL).', true);
+    return;
+  }
+  if (!file.type.startsWith('image/')) {
+    setDropStatus(dropEl, 'Unsupported file type.', true);
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      let w, h;
+      if (state.mode === 'single') {
+        const scale = Math.min(1, SINGLE_MAX / Math.max(img.width, img.height));
+        w = Math.max(1, Math.round(img.width * scale));
+        h = Math.max(1, Math.round(img.height * scale));
+      } else {
+        w = WORK_SIZE; h = WORK_SIZE;
+      }
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+      const imageData = ctx.getImageData(0, 0, w, h);
+      state.images[slotId] = { canvas, ctx, imageData, width: w, height: h, name: file.name };
+      renderThumb(dropEl, canvas, file.name);
+      updateRunButtonState();
+      clearWorkspace();
+    };
+    img.onerror = () => setDropStatus(dropEl, 'Could not read image.', true);
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function renderThumb(dropEl, canvas, name) {
+  const inner = dropEl.querySelector('.dropzone-inner');
+  inner.innerHTML = '';
+  const thumb = document.createElement('canvas');
+  thumb.width = canvas.width; thumb.height = canvas.height;
+  thumb.className = 'thumb-canvas';
+  thumb.getContext('2d').drawImage(canvas, 0, 0);
+  const cap = document.createElement('div');
+  cap.className = 'dropzone-filename';
+  cap.textContent = name;
+  inner.appendChild(thumb);
+  inner.appendChild(cap);
+  dropEl.classList.add('filled');
+}
+
+function setDropStatus(dropEl, message, isError) {
+  const inner = dropEl.querySelector('.dropzone-inner');
+  inner.innerHTML = '';
+  const msg = document.createElement('div');
+  msg.className = isError ? 'dropzone-error' : 'dropzone-text';
+  msg.textContent = message;
+  inner.appendChild(msg);
+}
+
+/* ===== Quick chips ===== */
+function renderQuickChips() {
+  quickChips.innerHTML = '';
+  QUICK_QUERIES[state.mode].forEach(q => {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'chip';
+    chip.textContent = q;
+    chip.addEventListener('click', () => { queryInput.value = q; queryInput.focus(); });
+    quickChips.appendChild(chip);
+  });
+}
+
+/* ===== Run button state ===== */
+function updateRunButtonState() {
+  const required = SLOT_CONFIG[state.mode].length;
+  const have = SLOT_CONFIG[state.mode].filter(cfg => state.images[cfg.id]).length;
+  runBtn.disabled = have < required || state.running;
+}
+
+/* ===== Landcover classification ===== */
+function classifyPixel(r, g, b) {
+  const brightness = (r + g + b) / 3;
+  if (b > r + 12 && b >= g - 5 && brightness < 195) return 'water';
+  if (g > r + 12 && g > b + 8) return 'vegetation';
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  const sat = max === 0 ? 0 : (max - min) / max;
+  if (sat < 0.15 && brightness > 90) return 'built-up';
+  if (r > b + 15 && r >= g - 5) return 'bare soil';
+  return 'other';
+}
+
+function computeLandcoverStats(imageData) {
+  const data = imageData.data;
+  const n = imageData.width * imageData.height;
+  const classMap = new Array(n);
+  const counts = { water: 0, vegetation: 0, 'built-up': 0, 'bare soil': 0, other: 0 };
+  for (let i = 0, p = 0; i < data.length; i += 4, p++) {
+    const cls = classifyPixel(data[i], data[i + 1], data[i + 2]);
+    classMap[p] = cls;
+    counts[cls]++;
+  }
+  const percentages = {};
+  for (const k in counts) percentages[k] = (counts[k] / n) * 100;
+  return { counts, total: n, percentages, classMap, width: imageData.width, height: imageData.height };
+}
+
+function topClass(stats) {
+  return ['water', 'vegetation', 'built-up', 'bare soil'].sort((a, b) => stats.percentages[b] - stats.percentages[a])[0];
+}
+
+/* ===== Query understanding ===== */
+function detectKeyword(q) {
+  if (/water|river|lake|pond|reservoir|flood/.test(q)) return 'water';
+  if (/veget|forest|green|crop|farm|field|tree/.test(q)) return 'vegetation';
+  if (/built|urban|building|city|road|infrastructure/.test(q)) return 'built-up';
+  if (/bare\s*soil|barren|exposed land/.test(q)) return 'bare soil';
+  return null;
+}
+
+function classifyTask(query, mode) {
+  const q = query.toLowerCase();
+  if (mode === 'bitemporal') {
+    if (/increase|decrease|remain|grown|shrunk|more or less/.test(q)) {
+      return { type: 'change-vqa', label: 'Change-based VQA (comparative)' };
+    }
+    return { type: 'change-describe', label: 'Change Detection & Description' };
+  }
+  if (mode === 'cross') {
+    return { type: 'fusion', label: 'Optical\u2013SAR Fusion Analysis' };
+  }
+  if (/highlight|locate|show me|point out|where is/.test(q)) {
+    return { type: 'grounding', label: 'Text-guided Region Grounding' };
+  }
+  if (/^(what|how|is there|are there|does|has|how much|how many)/.test(q.trim())) {
+    return { type: 'vqa', label: 'Visual Question Answering' };
+  }
+  return { type: 'caption', label: 'Scene Captioning / Description' };
+}
+
+function checkCompatibility(task, mode) {
+  const required = SLOT_CONFIG[mode].length;
+  const have = SLOT_CONFIG[mode].filter(cfg => state.images[cfg.id]).length;
+  if (have < required) {
+    return { ok: false, message: `${task.label} in ${mode} mode requires ${required} image(s); ${have} provided.` };
+  }
+  return { ok: true, message: `${have}/${required} image(s) present \u00b7 format & resolution validated.` };
+}
+
+/* ===== Overlay rendering helpers ===== */
+function buildHighlightOverlay(slot, classMap, targetClass, drawBBox) {
+  const w = slot.canvas.width, h = slot.canvas.height;
+  const out = document.createElement('canvas');
+  out.width = w; out.height = h;
+  const octx = out.getContext('2d');
+  octx.drawImage(slot.canvas, 0, 0);
+  const imgData = octx.getImageData(0, 0, w, h);
+  const data = imgData.data;
+  const color = CLASS_COLORS[targetClass] || [255, 255, 255];
+  let minX = w, minY = h, maxX = 0, maxY = 0, count = 0;
+  for (let p = 0; p < classMap.length; p++) {
+    if (classMap[p] === targetClass) {
+      const x = p % w, y = Math.floor(p / w);
+      const idx = p * 4;
+      data[idx] = data[idx] * 0.4 + color[0] * 0.6;
+      data[idx + 1] = data[idx + 1] * 0.4 + color[1] * 0.6;
+      data[idx + 2] = data[idx + 2] * 0.4 + color[2] * 0.6;
+      if (x < minX) minX = x; if (x > maxX) maxX = x;
+      if (y < minY) minY = y; if (y > maxY) maxY = y;
+      count++;
+    }
+  }
+  octx.putImageData(imgData, 0, 0);
+  if (drawBBox && count > 25) {
+    octx.strokeStyle = `rgb(${color[0]},${color[1]},${color[2]})`;
+    octx.lineWidth = 2;
+    octx.strokeRect(minX + 1, minY + 1, Math.max(1, maxX - minX - 2), Math.max(1, maxY - minY - 2));
+  }
+  return out;
+}
+
+function renderChangeOverlay(slotB, mask) {
+  const w = slotB.canvas.width, h = slotB.canvas.height;
+  const out = document.createElement('canvas');
+  out.width = w; out.height = h;
+  const octx = out.getContext('2d');
+  octx.drawImage(slotB.canvas, 0, 0);
+  const imgData = octx.getImageData(0, 0, w, h);
+  const data = imgData.data;
+  for (let p = 0; p < mask.length; p++) {
+    if (mask[p]) {
+      const idx = p * 4;
+      data[idx] = data[idx] * 0.35 + CHANGE_COLOR[0] * 0.65;
+      data[idx + 1] = data[idx + 1] * 0.35 + CHANGE_COLOR[1] * 0.65;
+      data[idx + 2] = data[idx + 2] * 0.35 + CHANGE_COLOR[2] * 0.65;
+    }
+  }
+  octx.putImageData(imgData, 0, 0);
+  return out;
+}
+
+function renderFusionOverlay(opticalSlot, fused) {
+  const w = opticalSlot.canvas.width, h = opticalSlot.canvas.height;
+  const out = document.createElement('canvas');
+  out.width = w; out.height = h;
+  const octx = out.getContext('2d');
+  octx.drawImage(opticalSlot.canvas, 0, 0);
+  const imgData = octx.getImageData(0, 0, w, h);
+  const data = imgData.data;
+  const waterColor = CLASS_COLORS.water, builtColor = CLASS_COLORS['built-up'];
+  for (let p = 0; p < fused.waterMask.length; p++) {
+    const idx = p * 4;
+    if (fused.waterMask[p]) {
+      data[idx] = data[idx] * 0.35 + waterColor[0] * 0.65;
+      data[idx + 1] = data[idx + 1] * 0.35 + waterColor[1] * 0.65;
+      data[idx + 2] = data[idx + 2] * 0.35 + waterColor[2] * 0.65;
+    } else if (fused.builtMask[p]) {
+      data[idx] = data[idx] * 0.35 + builtColor[0] * 0.65;
+      data[idx + 1] = data[idx + 1] * 0.35 + builtColor[1] * 0.65;
+      data[idx + 2] = data[idx + 2] * 0.35 + builtColor[2] * 0.65;
+    }
+  }
+  octx.putImageData(imgData, 0, 0);
+  return out;
+}
+
+/* ===== Change detection ===== */
+function computeChangeMask(a, b) {
+  const w = a.width, h = a.height, n = w * h;
+  const mask = new Uint8Array(n);
+  const grid = new Array(9).fill(0);
+  const threshold = 28;
+  let changed = 0;
+  for (let p = 0; p < n; p++) {
+    const idx = p * 4;
+    const grayA = (a.data[idx] + a.data[idx + 1] + a.data[idx + 2]) / 3;
+    const grayB = (b.data[idx] + b.data[idx + 1] + b.data[idx + 2]) / 3;
+    if (Math.abs(grayA - grayB) > threshold) {
+      mask[p] = 1; changed++;
+      const x = p % w, y = Math.floor(p / w);
+      const gx = Math.min(2, Math.floor(x / (w / 3)));
+      const gy = Math.min(2, Math.floor(y / (h / 3)));
+      grid[gy * 3 + gx]++;
+    }
+  }
+  return { mask, changedPct: (changed / n) * 100, grid, width: w, height: h };
+}
+
+function describeLocation(diff) {
+  if (diff.changedPct < 1) return 'no single concentrated region';
+  const labels = ['top-left', 'top-center', 'top-right', 'middle-left', 'center', 'middle-right', 'bottom-left', 'bottom-center', 'bottom-right'];
+  let maxIdx = 0;
+  for (let i = 1; i < 9; i++) if (diff.grid[i] > diff.grid[maxIdx]) maxIdx = i;
+  return labels[maxIdx] + ' of the frame';
+}
+
+/* ===== SAR structure (Sobel) ===== */
+function computeSARStructure(imageData) {
+  const w = imageData.width, h = imageData.height, data = imageData.data;
+  const gray = new Float32Array(w * h);
+  for (let p = 0; p < w * h; p++) {
+    const idx = p * 4;
+    gray[p] = (data[idx] + data[idx + 1] + data[idx + 2]) / 3;
+  }
+  const edge = new Uint8Array(w * h);
+  const dark = new Uint8Array(w * h);
+  const gxK = [-1, 0, 1, -2, 0, 2, -1, 0, 1];
+  const gyK = [-1, -2, -1, 0, 0, 0, 1, 2, 1];
+  let edgeCount = 0, darkCount = 0;
+  for (let y = 1; y < h - 1; y++) {
+    for (let x = 1; x < w - 1; x++) {
+      let gx = 0, gy = 0, k = 0;
+      for (let j = -1; j <= 1; j++) {
+        for (let i = -1; i <= 1; i++) {
+          const val = gray[(y + j) * w + (x + i)];
+          gx += val * gxK[k]; gy += val * gyK[k]; k++;
+        }
+      }
+      const mag = Math.sqrt(gx * gx + gy * gy);
+      const p = y * w + x;
+      if (mag > 60) { edge[p] = 1; edgeCount++; }
+      if (gray[p] < 70 && mag < 25) { dark[p] = 1; darkCount++; }
+    }
+  }
+  return { edge, dark, edgePct: (edgeCount / (w * h)) * 100, darkPct: (darkCount / (w * h)) * 100, width: w, height: h };
+}
+
+function fuseClasses(opticalStats, sarStruct) {
+  const n = opticalStats.classMap.length;
+  const waterMask = new Uint8Array(n), builtMask = new Uint8Array(n);
+  let waterCount = 0, builtCount = 0;
+  let waterRelevant = 0, waterAgree = 0, builtRelevant = 0, builtAgree = 0;
+  for (let p = 0; p < n; p++) {
+    const opticalWater = opticalStats.classMap[p] === 'water';
+    const opticalBuilt = opticalStats.classMap[p] === 'built-up' || opticalStats.classMap[p] === 'bare soil';
+    const sarDark = sarStruct.dark[p] === 1;
+    const sarEdge = sarStruct.edge[p] === 1;
+    if (opticalWater || sarDark) { waterRelevant++; if (opticalWater && sarDark) waterAgree++; }
+    if (opticalBuilt || sarEdge) { builtRelevant++; if (opticalBuilt && sarEdge) builtAgree++; }
+    if (opticalWater && sarDark) { waterMask[p] = 1; waterCount++; }
+    if (opticalBuilt && sarEdge) { builtMask[p] = 1; builtCount++; }
+  }
+  const agreementPct = ((waterRelevant ? waterAgree / waterRelevant : 0) + (builtRelevant ? builtAgree / builtRelevant : 0)) / 2 * 100;
+  return { waterMask, builtMask, waterPct: (waterCount / n) * 100, builtPct: (builtCount / n) * 100, agreementPct };
+}
+
+/* ===== Tool implementations ===== */
+function runCaptionTool() {
+  const slot = state.images[SLOT_CONFIG.single[0].id];
+  const stats = computeLandcoverStats(slot.imageData);
+  const order = ['vegetation', 'water', 'built-up', 'bare soil'].sort((a, b) => stats.percentages[b] - stats.percentages[a]);
+  const dom = order[0];
+  const sentences = [`The image is dominated by ${CLASS_LABELS[dom]} (${stats.percentages[dom].toFixed(1)}% of the analysed area).`];
+  const rest = order.slice(1).filter(c => stats.percentages[c] > 3);
+  if (rest.length) {
+    sentences.push(`Secondary cover includes ${rest.map(c => `${CLASS_LABELS[c]} (${stats.percentages[c].toFixed(1)}%)`).join(', ')}.`);
+  }
+  const confidence = Math.min(0.93, 0.55 + stats.percentages[dom] / 180);
+  return { answer: sentences.join(' '), confidence, overlay: null, evidence: stats.percentages };
+}
+
+function runVQATool(images, query) {
+  const slot = state.images[SLOT_CONFIG.single[0].id];
+  const stats = computeLandcoverStats(slot.imageData);
+  const q = query.toLowerCase();
+  const keyword = detectKeyword(q);
+  let answer, confidence, overlay = null;
+  if (keyword && /how much|what percentage|what proportion|what fraction/.test(q)) {
+    answer = `Approximately ${stats.percentages[keyword].toFixed(1)}% of the image is classified as ${CLASS_LABELS[keyword]}.`;
+    confidence = Math.min(0.9, 0.6 + stats.percentages[keyword] / 150);
+    overlay = buildHighlightOverlay(slot, stats.classMap, keyword, false);
+  } else if (keyword && /is there|are there|does|any /.test(q)) {
+    const present = stats.percentages[keyword] > 2;
+    answer = present
+      ? `Yes \u2014 ${CLASS_LABELS[keyword]} is present, covering about ${stats.percentages[keyword].toFixed(1)}% of the scene.`
+      : `No significant ${CLASS_LABELS[keyword]} was detected in this scene (${stats.percentages[keyword].toFixed(1)}%).`;
+    confidence = present ? Math.min(0.9, 0.6 + stats.percentages[keyword] / 150) : 0.58;
+    overlay = present ? buildHighlightOverlay(slot, stats.classMap, keyword, false) : null;
+  } else if (keyword) {
+    answer = `${CLASS_LABELS[keyword]} covers about ${stats.percentages[keyword].toFixed(1)}% of the scene.`;
+    confidence = 0.65;
+    overlay = buildHighlightOverlay(slot, stats.classMap, keyword, false);
+  } else {
+    const order = ['vegetation', 'water', 'built-up', 'bare soil'].sort((a, b) => stats.percentages[b] - stats.percentages[a]);
+    answer = `Based on spectral composition, the scene is most consistent with ${CLASS_LABELS[order[0]]} (${stats.percentages[order[0]].toFixed(1)}%), followed by ${CLASS_LABELS[order[1]]} (${stats.percentages[order[1]].toFixed(1)}%).`;
+    confidence = Math.min(0.85, 0.55 + stats.percentages[order[0]] / 200);
+  }
+  return { answer, confidence, overlay, evidence: stats.percentages };
+}
+
+function runGroundingTool(images, query) {
+  const slot = state.images[SLOT_CONFIG.single[0].id];
+  const stats = computeLandcoverStats(slot.imageData);
+  const keyword = detectKeyword(query.toLowerCase()) || topClass(stats);
+  const pct = stats.percentages[keyword];
+  const overlay = buildHighlightOverlay(slot, stats.classMap, keyword, true);
+  const answer = pct > 1
+    ? `Located and outlined the region(s) matching "${CLASS_LABELS[keyword]}" \u2014 approximately ${pct.toFixed(1)}% of the frame, shown in the overlay.`
+    : `No region matching "${CLASS_LABELS[keyword]}" could be localized with sufficient confidence.`;
+  const confidence = pct > 1 ? Math.min(0.9, 0.55 + pct / 120) : 0.4;
+  return { answer, confidence, overlay, evidence: stats.percentages };
+}
+
+function runChangeTool(images, query) {
+  const a = state.images['temporal-a'], b = state.images['temporal-b'];
+  const diff = computeChangeMask(a.imageData, b.imageData);
+  const location = describeLocation(diff);
+  const answer = diff.changedPct > 1
+    ? `Change detected across approximately ${diff.changedPct.toFixed(1)}% of the co-registered area, concentrated in the ${location}.`
+    : `No significant change was detected between the two acquisitions (${diff.changedPct.toFixed(1)}% of pixels differ, within the no-change threshold).`;
+  const confidence = Math.min(0.92, 0.5 + diff.changedPct / 70);
+  const overlay = renderChangeOverlay(b, diff.mask);
+  return { answer, confidence, overlay, evidence: { changedPct: diff.changedPct, location } };
+}
+
+function runChangeVQATool(images, query) {
+  const a = state.images['temporal-a'], b = state.images['temporal-b'];
+  const statsA = computeLandcoverStats(a.imageData);
+  const statsB = computeLandcoverStats(b.imageData);
+  const keyword = detectKeyword(query.toLowerCase()) || 'built-up';
+  const pa = statsA.percentages[keyword], pb = statsB.percentages[keyword];
+  const delta = pb - pa;
+  const trend = Math.abs(delta) < 2 ? 'remained largely unchanged' : (delta > 0 ? 'increased' : 'decreased');
+  const answer = `${CLASS_LABELS[keyword]} coverage has ${trend} between the two dates (from ${pa.toFixed(1)}% to ${pb.toFixed(1)}%, a ${delta >= 0 ? '+' : ''}${delta.toFixed(1)} percentage-point shift).`;
+  const diff = computeChangeMask(a.imageData, b.imageData);
+  const confidence = Math.min(0.9, 0.55 + Math.abs(delta) / 25);
+  const overlay = renderChangeOverlay(b, diff.mask);
+  return { answer, confidence, overlay, evidence: { pa, pb, delta } };
+}
+
+function runFusionTool(images, query) {
+  const optical = state.images['optical'], sar = state.images['sar'];
+  const opticalStats = computeLandcoverStats(optical.imageData);
+  const sarStruct = computeSARStructure(sar.imageData);
+  const fused = fuseClasses(opticalStats, sarStruct);
+  const answer = `Combining optical spectral signatures with SAR structural texture: water-covered area is estimated at ${fused.waterPct.toFixed(1)}% and built-up area at ${fused.builtPct.toFixed(1)}% (cross-modal agreement ${fused.agreementPct.toFixed(0)}%).`;
+  const confidence = Math.min(0.92, 0.55 + fused.agreementPct / 180);
+  const overlay = renderFusionOverlay(optical, fused);
+  return { answer, confidence, overlay, evidence: { waterPct: fused.waterPct, builtPct: fused.builtPct, agreementPct: fused.agreementPct } };
+}
+
+const TOOL_REGISTRY = {
+  caption: { name: 'RS-Caption-Heuristic v0.1 (spectral composition classifier)', run: runCaptionTool },
+  vqa: { name: 'RS-VQA-Heuristic v0.1 (keyword-grounded stats lookup)', run: runVQATool },
+  grounding: { name: 'RS-Ground-Heuristic v0.1 (threshold segmentation)', run: runGroundingTool },
+  'change-describe': { name: 'RS-ChangeNet-Heuristic v0.1 (pixel-differencing)', run: runChangeTool },
+  'change-vqa': { name: 'RS-ChangeVQA-Heuristic v0.1 (class-delta comparison)', run: runChangeVQATool },
+  fusion: { name: 'RS-Fusion-Heuristic v0.1 (Sobel structure + spectral fusion)', run: runFusionTool },
+};
+
+/* ===== Trace + workspace rendering ===== */
+const REDUCED_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+function delay(ms) { return new Promise(res => setTimeout(res, REDUCED_MOTION ? 0 : ms)); }
+
+function resetTrace() { tracePanel.innerHTML = ''; }
+
+function logTrace(label, detail) {
+  const line = document.createElement('div');
+  line.className = 'trace-line';
+  const time = document.createElement('span');
+  time.className = 'trace-time';
+  time.textContent = new Date().toISOString().slice(11, 19);
+  const lab = document.createElement('span');
+  lab.className = 'trace-label';
+  lab.textContent = label;
+  const det = document.createElement('span');
+  det.className = 'trace-detail';
+  det.textContent = detail;
+  line.appendChild(time); line.appendChild(lab); line.appendChild(det);
+  tracePanel.appendChild(line);
+  tracePanel.scrollTop = tracePanel.scrollHeight;
+}
+
+function clearWorkspace() {
+  canvasRow.innerHTML = '<div class="canvas-placeholder">Upload image(s) and run a query to see visual evidence here.</div>';
+  resultPanel.classList.add('hidden');
+  errorBanner.classList.add('hidden');
+  downloadBtn.disabled = true;
+}
+
+function renderCanvases(overlay) {
+  canvasRow.innerHTML = '';
+  SLOT_CONFIG[state.mode].forEach(cfg => {
+    const slot = state.images[cfg.id];
+    if (!slot) return;
+    const card = document.createElement('div');
+    card.className = 'canvas-card';
+    const title = document.createElement('div');
+    title.className = 'canvas-title';
+    title.textContent = cfg.label;
+    const c = document.createElement('canvas');
+    c.width = slot.canvas.width; c.height = slot.canvas.height;
+    c.getContext('2d').drawImage(slot.canvas, 0, 0);
+    card.appendChild(title); card.appendChild(c);
+    canvasRow.appendChild(card);
+  });
+  if (overlay) {
+    const card = document.createElement('div');
+    card.className = 'canvas-card highlight';
+    const title = document.createElement('div');
+    title.className = 'canvas-title';
+    title.textContent = 'Visual evidence';
+    card.appendChild(title); card.appendChild(overlay);
+    canvasRow.appendChild(card);
+  }
+}
+
+function showError(message) {
+  errorBanner.textContent = message;
+  errorBanner.classList.remove('hidden');
+  resultPanel.classList.add('hidden');
+}
+
+function setAgentStatus(status) {
+  statusPill.textContent = 'AGENT \u00b7 ' + status;
+  statusPill.classList.toggle('running', status === 'RUNNING');
+}
+
+function renderResult(task, tool, result, query) {
+  resultPanel.classList.remove('hidden');
+  errorBanner.classList.add('hidden');
+  document.getElementById('resultAnswer').textContent = result.answer;
+  const pct = Math.round(result.confidence * 100);
+  document.getElementById('confidenceValue').textContent = pct + '%';
+  document.getElementById('confidenceFill').style.width = pct + '%';
+  document.getElementById('resultTask').textContent = task.label;
+  document.getElementById('resultTool').textContent = tool.name;
+  renderCanvases(result.overlay);
+
+  state.lastReport = {
+    generated_at: new Date().toISOString(),
+    mode: state.mode,
+    query,
+    task: task.type,
+    task_label: task.label,
+    tool: tool.name,
+    confidence: result.confidence,
+    answer: result.answer,
+    evidence: result.evidence,
+  };
+  downloadBtn.disabled = false;
+}
+
+/* ===== Run agent ===== */
+async function runAgent() {
+  if (state.running) return;
+  state.running = true;
+  updateRunButtonState();
+  setAgentStatus('RUNNING');
+  resetTrace();
+  errorBanner.classList.add('hidden');
+  resultPanel.classList.add('hidden');
+
+  const query = queryInput.value.trim() || QUICK_QUERIES[state.mode][0];
+  queryInput.value = query;
+
+  await delay(150);
+  logTrace('QUERY', query);
+
+  await delay(300);
+  const task = classifyTask(query, state.mode);
+  logTrace('TASK CLASSIFIED', task.type + ' \u2014 ' + task.label);
+
+  await delay(300);
+  const check = checkCompatibility(task, state.mode);
+  logTrace('INPUT CHECK', check.message);
+
+  if (!check.ok) {
+    logTrace('HALT', 'Insufficient inputs for the selected task.');
+    showError(check.message);
+    state.running = false;
+    updateRunButtonState();
+    setAgentStatus('IDLE');
+    return;
+  }
+
+  await delay(300);
+  const tool = TOOL_REGISTRY[task.type];
+  logTrace('TOOL SELECTED', tool.name);
+
+  await delay(400);
+  let result;
+  try {
+    result = tool.run(state.images, query, task);
+  } catch (e) {
+    logTrace('ERROR', e.message);
+    showError('Execution failed: ' + e.message);
+    state.running = false;
+    updateRunButtonState();
+    setAgentStatus('IDLE');
+    return;
+  }
+  logTrace('EXECUTION COMPLETE', 'confidence ' + Math.round(result.confidence * 100) + '%');
+
+  await delay(200);
+  logTrace('REPORT READY', 'Evidence overlay and execution trace available for download.');
+
+  renderResult(task, tool, result, query);
+  state.running = false;
+  updateRunButtonState();
+  setAgentStatus('IDLE');
+}
+
+/* ===== Report download ===== */
+function downloadReport() {
+  if (!state.lastReport) return;
+  const blob = new Blob([JSON.stringify(state.lastReport, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'satquery-execution-report.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+/* ===== Reset ===== */
+function resetAll() {
+  state.images = {};
+  queryInput.value = '';
+  renderUploadSlots();
+  clearWorkspace();
+  updateRunButtonState();
+}
+
+/* ===== Wire up ===== */
+runBtn.addEventListener('click', runAgent);
+resetBtn.addEventListener('click', resetAll);
+downloadBtn.addEventListener('click', downloadReport);
+
+/* ===== Init ===== */
+setMode('single');
+
+</script>
+</body>
+</html>

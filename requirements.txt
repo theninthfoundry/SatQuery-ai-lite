@@ -1,0 +1,11 @@
+# Orchestration layer (agentic_controller.py) has no heavy deps.
+# Add these when you wire in real models / real image I/O:
+
+fastapi
+uvicorn
+rasterio          # GeoTIFF I/O with CRS/georeferencing
+numpy
+pillow
+torch
+open_clip_torch    # or transformers, depending on chosen backbone
+transformers
