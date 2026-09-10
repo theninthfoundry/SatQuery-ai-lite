@@ -1,10 +1,8 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/analyze" }
-  ],
-  "routes": [
-    { "handle": "filesystem" },
-    { "src": "/(.*)", "dest": "/public/index.html" }
+    { "source": "/api/analyze", "destination": "/api/analyze.py" },
+    { "source": "/", "destination": "/public/index.html" }
   ],
   "functions": {
     "api/analyze.py": {
