@@ -1,12 +1,18 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "rewrites": [
-    { "source": "/api/analyze", "destination": "/api/analyze.py" },
-    { "source": "/", "destination": "/public/index.html" }
-  ],
   "functions": {
     "api/analyze.py": {
       "maxDuration": 30
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/analyze",
+      "destination": "/api/analyze.py"
+    },
+    {
+      "source": "/",
+      "destination": "/public/index.html"
     }
   }
 }
