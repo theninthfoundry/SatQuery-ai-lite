@@ -1,0 +1,15 @@
+{
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/analyze" }
+  ],
+  "routes": [
+    { "handle": "filesystem" },
+    { "src": "/(.*)", "dest": "/public/index.html" }
+  ],
+  "functions": {
+    "api/analyze.py": {
+      "runtime": "@vercel/python@latest",
+      "maxDuration": 30
+    }
+  }
+}
