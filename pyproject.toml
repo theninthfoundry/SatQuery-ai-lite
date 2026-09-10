@@ -1,2 +1,12 @@
+[project]
+name = "satquery-ai-lite"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+	"fastapi",
+	"numpy",
+	"pillow",
+]
+
 [tool.vercel]
 entrypoint = "api.analyze:app"
