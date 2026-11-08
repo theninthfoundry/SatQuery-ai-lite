@@ -1,6 +1,7 @@
 [project]
 name = "satquery-ai-lite"
-version = "0.1.0"
+version = "1.0.0"
+description = "Evidence-first remote sensing intelligence workbench (lightweight, browser-first)."
 requires-python = ">=3.11"
 dependencies = [
 	"fastapi",
@@ -8,5 +9,13 @@ dependencies = [
 	"pillow",
 ]
 
+[project.optional-dependencies]
+dev = ["pytest", "httpx", "uvicorn"]
+
 [tool.vercel]
 entrypoint = "api.analyze:app"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+filterwarnings = ["ignore::DeprecationWarning"]

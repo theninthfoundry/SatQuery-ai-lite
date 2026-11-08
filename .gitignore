@@ -10,3 +10,7 @@ dist/
 build/
 .DS_Store
 Thumbs.db
+.jetro/
+.pytest_cache/
+node_modules/
+tests/e2e/fixtures/

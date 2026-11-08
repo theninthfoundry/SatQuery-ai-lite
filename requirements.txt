@@ -1,12 +1,6 @@
-# Deployed serverless backend (lightweight — no GPU deps)
+# Deployed serverless backend: lightweight, no GPU, no geospatial C libraries.
 fastapi
 numpy
 pillow
 
-# --- Reference only (not deployed) ---
-# The following are needed when real ML models are plugged in:
-# torch
-# open_clip_torch
-# transformers
-# rasterio
-# uvicorn
+# Development / CI only: see requirements-dev.txt

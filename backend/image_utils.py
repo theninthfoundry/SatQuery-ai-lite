@@ -278,14 +278,14 @@ def compute_change_mask(pixels_a: np.ndarray, pixels_b: np.ndarray) -> ChangeMas
     mask = (diff > threshold).astype(np.uint8)
     changed = int(mask.sum())
 
-    # 3x3 spatial grid counts
+    # 3x3 spatial grid counts (vectorised)
     grid = [0] * 9
     if changed > 0:
-        coords = np.argwhere(mask.reshape(h, w))
-        for y, x in coords:
-            gx = min(2, int(x / (w / 3)))
-            gy = min(2, int(y / (h / 3)))
-            grid[gy * 3 + gx] += 1
+        ys, xs = np.nonzero(mask.reshape(h, w))
+        gx = np.minimum(2, (xs / (w / 3)).astype(int))
+        gy = np.minimum(2, (ys / (h / 3)).astype(int))
+        counts = np.bincount(gy * 3 + gx, minlength=9)
+        grid = [int(c) for c in counts]
 
     return ChangeMaskResult(
         mask=mask, changed_pct=(changed / n) * 100,
@@ -309,41 +309,24 @@ def describe_location(diff: ChangeMaskResult) -> str:
 # ── SAR structure analysis (Sobel) ────────────────────────────────────────
 
 def compute_sar_structure(pixels: np.ndarray) -> SARStructure:
-    """Compute edge map and dark regions via Sobel filter on grayscale SAR image."""
+    """Edge map and dark regions via a vectorised Sobel filter on grayscale SAR-like input.
+
+    Same thresholds and border convention as the original per-pixel loop
+    (edge: magnitude > 60; dark: gray < 70 and magnitude < 25)."""
+    from backend.imgops import sobel_magnitude
+
     h, w = pixels.shape[:2]
     n = h * w
     gray = pixels.astype(np.float32).mean(axis=2)
-
-    # Sobel kernels
-    edge = np.zeros((h, w), dtype=np.uint8)
-    dark = np.zeros((h, w), dtype=np.uint8)
-    edge_count = 0
-    dark_count = 0
-
-    for y in range(1, h - 1):
-        for x in range(1, w - 1):
-            region = gray[y-1:y+2, x-1:x+2]
-            gx = (
-                -region[0, 0] + region[0, 2]
-                - 2*region[1, 0] + 2*region[1, 2]
-                - region[2, 0] + region[2, 2]
-            )
-            gy = (
-                -region[0, 0] - 2*region[0, 1] - region[0, 2]
-                + region[2, 0] + 2*region[2, 1] + region[2, 2]
-            )
-            mag = math.sqrt(gx * gx + gy * gy)
-            if mag > 60:
-                edge[y, x] = 1
-                edge_count += 1
-            if gray[y, x] < 70 and mag < 25:
-                dark[y, x] = 1
-                dark_count += 1
-
+    mag = sobel_magnitude(gray)
+    interior = np.zeros((h, w), dtype=bool)
+    interior[1:-1, 1:-1] = True
+    edge = ((mag > 60) & interior).astype(np.uint8)
+    dark = ((gray < 70) & (mag < 25) & interior).astype(np.uint8)
     return SARStructure(
         edge=edge.ravel(), dark=dark.ravel(),
-        edge_pct=(edge_count / n) * 100,
-        dark_pct=(dark_count / n) * 100,
+        edge_pct=(int(edge.sum()) / n) * 100,
+        dark_pct=(int(dark.sum()) / n) * 100,
         width=w, height=h,
     )
 
