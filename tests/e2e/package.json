@@ -1,0 +1,6 @@
+{
+  "name": "satquery-lite-e2e",
+  "private": true,
+  "scripts": { "test": "node frontend.e2e.js" },
+  "devDependencies": { "jsdom": "^25.0.0" }
+}
