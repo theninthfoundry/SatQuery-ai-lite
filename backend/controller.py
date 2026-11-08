@@ -46,10 +46,13 @@ class TraceStep:
 
 @dataclass
 class ToolResult:
+    """What a tool returns. There is deliberately no `confidence` field:
+    heuristic tools have no calibrated probability. Trust is expressed by the
+    pipeline's `reliability` assessment instead (see backend/reliability.py)."""
     answer: str
-    confidence: float
     overlay_base64: Optional[str] = None
     evidence: Dict[str, Any] = field(default_factory=dict)
+    layers: List[Dict[str, Any]] = field(default_factory=list)
 
 
 @dataclass
@@ -61,7 +64,7 @@ class ExecutionReport:
     task_label: str
     tool: str
     answer: str
-    confidence: float
+    confidence: Optional[float]
     evidence: Dict[str, Any]
     overlay_base64: Optional[str]
     trace: List[Dict[str, str]]

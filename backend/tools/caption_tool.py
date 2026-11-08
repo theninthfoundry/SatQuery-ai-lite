@@ -39,11 +39,8 @@ def run(pixels: np.ndarray, query: str) -> ToolResult:
         parts = [f"{CLASS_LABELS[c]} ({stats.percentages[c]:.1f}%)" for c in rest]
         sentences.append(f"Secondary cover includes {', '.join(parts)}.")
 
-    confidence = min(0.93, 0.55 + stats.percentages[dom] / 180)
-
     return ToolResult(
         answer=" ".join(sentences),
-        confidence=confidence,
         overlay_base64=None,
-        evidence=stats.percentages,
+        evidence={"class_percentages": stats.percentages, "dominant_class": dom},
     )

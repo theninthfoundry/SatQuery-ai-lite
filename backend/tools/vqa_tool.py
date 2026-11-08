@@ -32,7 +32,6 @@ def run(pixels: np.ndarray, query: str) -> ToolResult:
             f"Approximately {stats.percentages[keyword]:.1f}% of the image "
             f"is classified as {CLASS_LABELS[keyword]}."
         )
-        confidence = min(0.9, 0.6 + stats.percentages[keyword] / 150)
         overlay = build_highlight_overlay(pixels, stats.class_map, keyword, False)
         overlay_b64 = numpy_to_base64(overlay)
 
@@ -43,7 +42,6 @@ def run(pixels: np.ndarray, query: str) -> ToolResult:
                 f"Yes — {CLASS_LABELS[keyword]} is present, "
                 f"covering about {stats.percentages[keyword]:.1f}% of the scene."
             )
-            confidence = min(0.9, 0.6 + stats.percentages[keyword] / 150)
             overlay = build_highlight_overlay(pixels, stats.class_map, keyword, False)
             overlay_b64 = numpy_to_base64(overlay)
         else:
@@ -51,14 +49,12 @@ def run(pixels: np.ndarray, query: str) -> ToolResult:
                 f"No significant {CLASS_LABELS[keyword]} was detected "
                 f"in this scene ({stats.percentages[keyword]:.1f}%)."
             )
-            confidence = 0.58
 
     elif keyword:
         answer = (
             f"{CLASS_LABELS[keyword]} covers about "
             f"{stats.percentages[keyword]:.1f}% of the scene."
         )
-        confidence = 0.65
         overlay = build_highlight_overlay(pixels, stats.class_map, keyword, False)
         overlay_b64 = numpy_to_base64(overlay)
 
@@ -73,11 +69,9 @@ def run(pixels: np.ndarray, query: str) -> ToolResult:
             f"{CLASS_LABELS[order[0]]} ({stats.percentages[order[0]]:.1f}%), "
             f"followed by {CLASS_LABELS[order[1]]} ({stats.percentages[order[1]]:.1f}%)."
         )
-        confidence = min(0.85, 0.55 + stats.percentages[order[0]] / 200)
 
     return ToolResult(
         answer=answer,
-        confidence=confidence,
         overlay_base64=overlay_b64,
-        evidence=stats.percentages,
+        evidence={"class_percentages": stats.percentages, "target_class": keyword},
     )
