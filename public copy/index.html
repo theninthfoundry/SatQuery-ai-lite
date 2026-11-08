@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SatQuery AI Lite — Evidence-First Remote Sensing Intelligence</title>
+<meta name="description" content="Evidence-first change intelligence for satellite imagery: image quality, alignment diagnostics, spatial evidence and threshold sensitivity, with every result traceable to measurements.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #09090B; --bg-alt: #111113; --panel: #18181B; --panel-2: #27272A; --panel-3: #323238;
+  --border: #3F3F46; --border-soft: rgba(63,63,70,.55);
+  --text: #FAFAFA; --text-muted: #A1A1AA; --text-faint: #71717A;
+  --optical: #E8A33D; --sar: #5EC8D8; --ok: #4FD1A5; --change: #EF4444; --warn: #F59E0B; --orange: #FB923C;
+  --r-sm: 6px; --r-md: 10px; --r-lg: 14px;
+  --font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; --mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font: 14px/1.55 var(--font); -webkit-font-smoothing: antialiased; min-height: 100vh; }
+button, input, textarea, select { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--sar); outline-offset: 2px; }
+.hidden { display: none !important; }
+.mono { font-family: var(--mono); }
+.muted { color: var(--text-muted); } .faint { color: var(--text-faint); }
+
+header { border-bottom: 1px solid var(--border-soft); padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: 12px; }
+.mark { width: 34px; height: 34px; border: 1px solid var(--sar); border-radius: 8px; display: grid; place-items: center; font: 600 13px var(--mono); color: var(--sar); }
+.brand h1 { font-size: 16px; font-weight: 600; letter-spacing: -.01em; }
+.brand p { font-size: 12px; color: var(--text-muted); }
+.hdr-right { display: flex; align-items: center; gap: 10px; font: 12px var(--mono); color: var(--text-muted); }
+.pill { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border: 1px solid var(--border); border-radius: 100px; font: 500 11.5px var(--mono); white-space: nowrap; }
+.dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-faint); }
+.pill.ok .dot { background: var(--ok); } .pill.bad .dot { background: var(--change); }
+.navtabs { display: flex; gap: 2px; }
+.navtabs button { background: none; border: 0; padding: 6px 12px; border-radius: var(--r-sm); color: var(--text-muted); cursor: pointer; }
+.navtabs button.active { background: var(--panel-2); color: var(--text); }
+
+main { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 20px; padding: 20px 24px 60px; max-width: 1500px; margin: 0 auto; align-items: start; }
+@media (max-width: 960px) { main { grid-template-columns: 1fr; } }
+
+.card { background: var(--panel); border: 1px solid var(--border-soft); border-radius: var(--r-md); padding: 16px; }
+.card + .card { margin-top: 14px; }
+.card h2 { font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: var(--text-muted); margin-bottom: 12px; }
+.card h3 { font-size: 13px; font-weight: 600; margin-bottom: 8px; }
+.side { position: sticky; top: 14px; }
+@media (max-width: 960px) { .side { position: static; } }
+
+.seg { display: grid; gap: 6px; margin-bottom: 14px; }
+.seg button { text-align: left; padding: 9px 12px; background: var(--bg-alt); border: 1px solid var(--border-soft); border-radius: var(--r-sm); color: var(--text-muted); cursor: pointer; }
+.seg button.active { border-color: var(--sar); color: var(--text); }
+.seg small { display: block; color: var(--text-faint); font-size: 11.5px; }
+
+.slot { margin-bottom: 12px; }
+.slot-label { font-size: 12.5px; font-weight: 500; }
+.slot-hint { font-size: 11.5px; color: var(--text-faint); margin-bottom: 4px; }
+.drop { display: flex; gap: 10px; align-items: center; padding: 8px; border: 1px dashed var(--border); border-radius: var(--r-sm); background: var(--bg-alt); cursor: pointer; min-height: 56px; }
+.drop:hover, .drop.over { border-color: var(--sar); }
+.drop.filled { border-style: solid; }
+.drop input { display: none; }
+.drop img, .drop .ph { width: 42px; height: 42px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border); flex: none; }
+.drop .ph { display: grid; place-items: center; font: 10px var(--mono); color: var(--text-faint); }
+.drop .meta { min-width: 0; font-size: 12px; }
+.drop .meta b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+.slot-err { color: var(--change); font-size: 12px; margin-top: 4px; }
+
+textarea, select, input[type=number], input[type=text] { width: 100%; background: var(--bg-alt); border: 1px solid var(--border-soft); border-radius: var(--r-sm); padding: 9px 11px; }
+textarea { resize: vertical; min-height: 72px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.chip { background: none; border: 1px solid var(--border-soft); color: var(--text-muted); font-size: 11.5px; padding: 4px 9px; border-radius: 100px; cursor: pointer; text-align: left; }
+.chip:hover { color: var(--text); border-color: var(--sar); }
+details.opts { margin-top: 12px; border-top: 1px solid var(--border-soft); padding-top: 10px; }
+details.opts summary { cursor: pointer; color: var(--text-muted); font-size: 12.5px; }
+.optgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+.optgrid label { font-size: 11.5px; color: var(--text-muted); display: block; margin-bottom: 3px; }
+.optgrid .full { grid-column: 1 / -1; }
+.check { display: flex; gap: 8px; align-items: flex-start; font-size: 12px; color: var(--text-muted); margin-top: 10px; }
+.check input { margin-top: 3px; }
+.btnrow { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; margin-top: 14px; }
+.btn { padding: 10px 14px; border-radius: var(--r-sm); border: 1px solid var(--border); background: var(--panel-2); cursor: pointer; font-weight: 500; }
+.btn:hover:not(:disabled) { background: var(--panel-3); }
+.btn.primary { background: var(--text); color: var(--bg); border-color: var(--text); }
+.btn.primary:hover:not(:disabled) { background: #e4e4e7; }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn.small { padding: 5px 10px; font-size: 12px; }
+
+.banner { border: 1px solid var(--border); border-radius: var(--r-md); padding: 12px 14px; margin-bottom: 14px; background: var(--panel); }
+.banner.err { border-color: rgba(239,68,68,.6); background: rgba(239,68,68,.07); }
+.banner.warn { border-color: rgba(245,158,11,.55); background: rgba(245,158,11,.06); }
+.banner.info { border-color: rgba(94,200,216,.45); background: rgba(94,200,216,.06); }
+.banner h3 { font-size: 13.5px; margin-bottom: 4px; }
+
+.empty { border: 1px dashed var(--border); border-radius: var(--r-lg); padding: 48px 24px; text-align: center; color: var(--text-muted); }
+.empty h2 { font-size: 17px; color: var(--text); margin-bottom: 8px; }
+.empty ul { text-align: left; display: inline-block; margin-top: 14px; font-size: 13px; }
+
+.tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--border-soft); margin-bottom: 16px; overflow-x: auto; }
+.tabs button { background: none; border: 0; border-bottom: 2px solid transparent; padding: 9px 14px; color: var(--text-muted); cursor: pointer; white-space: nowrap; }
+.tabs button.active { color: var(--text); border-color: var(--sar); }
+
+.answer { font-size: 16.5px; line-height: 1.55; letter-spacing: -.005em; }
+.chiprow { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 0; }
+.badge { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 100px; font: 500 11.5px var(--mono); border: 1px solid var(--border); }
+.b-OK, .b-SUPPORTED, .b-GOOD, .b-COMPLETED, .b-PROCEED, .b-COMPATIBLE, .b-STRONG { color: var(--ok); border-color: rgba(79,209,165,.5); }
+.b-CAUTION, .b-WARNING, .b-ACCEPTABLE, .b-COMPLETED_WITH_WARNINGS, .b-PROCEED_WITH_WARNINGS, .b-MODERATE, .b-CONCERN, .b-COMPATIBLE_WITH_WARNINGS { color: var(--warn); border-color: rgba(245,158,11,.5); }
+.b-WEAK { color: var(--orange); border-color: rgba(251,146,60,.5); }
+.b-UNSUPPORTED, .b-UNRELIABLE, .b-POOR, .b-UNUSABLE, .b-SEVERE, .b-REJECT, .b-REQUEST_BETTER_IMAGERY, .b-HIGH, .b-INCOMPATIBLE, .b-ERROR { color: var(--change); border-color: rgba(239,68,68,.55); }
+.b-NONE, .b-INFO, .b-NOT_ASSESSED, .b-NO_CHANGE { color: var(--text-muted); }
+
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 16px 0; }
+.tile { background: var(--bg-alt); border: 1px solid var(--border-soft); border-radius: var(--r-sm); padding: 10px 12px; }
+.tile .k { font-size: 11px; color: var(--text-faint); text-transform: uppercase; letter-spacing: .06em; }
+.tile .v { font: 500 18px var(--mono); margin-top: 2px; }
+.tile .s { font-size: 11.5px; color: var(--text-muted); margin-top: 2px; }
+
+.statements { list-style: none; display: grid; gap: 8px; }
+.statements li { padding: 10px 12px; background: var(--bg-alt); border: 1px solid var(--border-soft); border-left: 3px solid var(--sar); border-radius: var(--r-sm); font-size: 13.5px; }
+.statements li .basis { display: block; margin-top: 4px; font: 11px var(--mono); color: var(--text-faint); word-break: break-all; }
+.list { display: grid; gap: 6px; list-style: none; }
+.list li { font-size: 13px; padding-left: 14px; position: relative; color: var(--text-muted); }
+.list li::before { content: ''; position: absolute; left: 0; top: .6em; width: 5px; height: 5px; border-radius: 50%; background: var(--text-faint); }
+
+.cols2 { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 1100px) { .cols2 { grid-template-columns: 1fr; } }
+
+.viewer { position: relative; overflow: hidden; border-radius: var(--r-sm); border: 1px solid var(--border); background: #000; }
+.viewer-inner { position: relative; width: 100%; transform-origin: 0 0; transition: transform .45s cubic-bezier(.4,0,.2,1); }
+@media (prefers-reduced-motion: reduce) { .viewer-inner { transition: none; } }
+.viewer img { display: block; width: 100%; height: 100%; }
+.viewer.zoomed img { image-rendering: pixelated; }
+.viewer svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.cell { fill: transparent; stroke: rgba(255,255,255,.28); stroke-width: .6; cursor: pointer; vector-effect: non-scaling-stroke; }
+.cell:hover { fill: rgba(255,255,255,.12); }
+.cell.active { stroke: var(--sar); stroke-width: 2.5; fill: rgba(94,200,216,.14); }
+.layer-btns { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
+.layer-btns button { background: var(--bg-alt); border: 1px solid var(--border-soft); color: var(--text-muted); padding: 4px 10px; border-radius: 100px; font-size: 12px; cursor: pointer; }
+.layer-btns button.active { color: var(--text); border-color: var(--sar); }
+.caption { font-size: 12px; color: var(--text-muted); margin-top: 6px; }
+
+.compare { position: relative; overflow: hidden; border: 1px solid var(--border); border-radius: var(--r-sm); user-select: none; touch-action: none; }
+.compare img { display: block; width: 100%; }
+.compare .top { position: absolute; inset: 0; }
+.compare .bar { position: absolute; top: 0; bottom: 0; width: 2px; background: #fff; cursor: ew-resize; }
+.compare .bar::after { content: '⇆'; position: absolute; top: 50%; left: -13px; width: 28px; height: 28px; border-radius: 50%; background: #fff; color: #000; display: grid; place-items: center; transform: translateY(-50%); font-size: 14px; }
+.compare .tag { position: absolute; top: 8px; left: 8px; font: 11px var(--mono); background: rgba(0,0,0,.65); padding: 2px 7px; border-radius: 4px; }
+.compare .tag.r { left: auto; right: 8px; }
+
+table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+th { text-align: left; font-weight: 500; color: var(--text-faint); padding: 6px 8px; border-bottom: 1px solid var(--border-soft); font-size: 11.5px; }
+td { padding: 6px 8px; border-bottom: 1px solid var(--border-soft); vertical-align: top; }
+td.num, th.num { text-align: right; font-family: var(--mono); }
+tr.row-click { cursor: pointer; } tr.row-click:hover td { background: rgba(255,255,255,.04); } tr.sel td { background: rgba(94,200,216,.1); }
+.kv { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; font-size: 13px; }
+.kv dt { color: var(--text-faint); } .kv dd { font-family: var(--mono); font-size: 12.5px; word-break: break-word; }
+.bar-row { display: grid; grid-template-columns: 90px 1fr 70px; gap: 10px; align-items: center; font: 12px var(--mono); margin: 6px 0; }
+.bar-track { height: 8px; background: var(--panel-2); border-radius: 100px; overflow: hidden; }
+.bar-fill { height: 100%; background: var(--sar); border-radius: 100px; }
+.bar-fill.base { background: var(--optical); }
+.callout { border-left: 3px solid var(--warn); padding: 8px 12px; background: rgba(245,158,11,.06); font-size: 12.5px; color: var(--text-muted); border-radius: 0 var(--r-sm) var(--r-sm) 0; margin-top: 10px; }
+
+.trace { margin-top: 18px; }
+.trace summary { cursor: pointer; font: 11.5px var(--mono); color: var(--text-muted); padding: 6px 0; }
+.trace-lines { font: 12px var(--mono); display: grid; gap: 4px; padding: 10px 14px; background: var(--bg-alt); border: 1px solid var(--border-soft); border-radius: var(--r-sm); max-height: 260px; overflow: auto; }
+.trace-lines div { display: grid; grid-template-columns: 62px 150px 1fr 60px; gap: 10px; }
+.trace-lines .t { color: var(--text-faint); } .trace-lines .l { color: var(--ok); } .trace-lines .ms { color: var(--text-faint); text-align: right; }
+.report-sec { margin-bottom: 18px; }
+.report-sec h3 { font-size: 14px; }
+.report-sec p { color: var(--text-muted); font-size: 13px; margin-bottom: 6px; }
+.dl { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.spinner { width: 14px; height: 14px; border-radius: 50%; border: 2px solid rgba(0,0,0,.25); border-top-color: var(--bg); animation: spin .8s linear infinite; display: inline-block; vertical-align: -2px; margin-right: 8px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spinner { animation: none; } }
+pre.json { font: 11.5px var(--mono); background: var(--bg-alt); border: 1px solid var(--border-soft); border-radius: var(--r-sm); padding: 10px; overflow: auto; max-height: 340px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div class="mark">SQ</div>
+    <div><h1>SatQuery AI Lite</h1><p>Evidence-first remote sensing intelligence</p></div>
+  </div>
+  <nav class="navtabs" aria-label="Views">
+    <button data-view="analysis" class="active">Analysis</button>
+    <button data-view="stac">STAC inspector</button>
+  </nav>
+  <div class="hdr-right"><span id="apiPill" class="pill"><span class="dot"></span><span id="apiText">connecting…</span></span></div>
+</header>
+
+<main>
+  <aside class="side" id="side">
+    <div class="card">
+      <h2>Input</h2>
+      <div class="seg" id="modeSeg">
+        <button data-mode="single" class="active">Single image<small>caption, question, grounding</small></button>
+        <button data-mode="bitemporal">Bi-temporal pair<small>change intelligence</small></button>
+        <button data-mode="cross">Optical + SAR pair<small>joint proxy analysis</small></button>
+      </div>
+      <div id="slots"></div>
+      <label class="check"><input type="checkbox" id="downscale"><span>If an image is over the size limit, downscale it in the browser (recorded in provenance).</span></label>
+    </div>
+    <div class="card">
+      <h2>Question</h2>
+      <textarea id="query" maxlength="500" placeholder="Ask about the imagery…"></textarea>
+      <div class="chips" id="chips"></div>
+      <details class="opts" id="optsBox">
+        <summary>Change-analysis parameters</summary>
+        <div class="optgrid">
+          <div><label for="optGrid">Grid size</label><select id="optGrid"></select></div>
+          <div><label for="optBase">Base threshold</label><input type="number" id="optBase" min="1" max="254" value="28"></div>
+          <div class="full"><label for="optThr">Sensitivity thresholds (comma-separated)</label><input type="text" id="optThr" value="20, 28, 40"></div>
+        </div>
+      </details>
+      <div class="btnrow">
+        <button class="btn primary" id="runBtn" disabled>Run analysis</button>
+        <button class="btn" id="checkBtn" disabled title="Image quality, alignment and metadata only">Check inputs</button>
+        <button class="btn" id="resetBtn">Reset</button>
+      </div>
+    </div>
+  </aside>
+
+  <section id="work" aria-live="polite"></section>
+</main>
+
+<script>
+"use strict";
+/* The interface renders what the API returns. It computes no findings, areas, confidences or interpretations. */
+
+const $ = (s, r = document) => r.querySelector(s);
+const NS = 'http://www.w3.org/2000/svg';
+function h(tag, cls, ...kids) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  for (const k of kids.flat()) if (k != null && k !== false) e.append(k.nodeType ? k : document.createTextNode(String(k)));
+  return e;
+}
+const fmt = (n, d = 1) => (n == null || Number.isNaN(n)) ? '—' : Number(n).toFixed(d);
+const pct = (n, d = 1) => n == null ? '—' : fmt(n, d) + '%';
+const mb = b => (b / 1e6).toFixed(2) + ' MB';
+const humanize = s => String(s).replace(/_/g, ' ').toLowerCase();
+function badge(value, label) { return h('span', 'badge b-' + value, label || humanize(value)); }
+const LEVEL_CLASS = {
+  brightness: { NORMAL: 'OK', DARK: 'WARNING', BRIGHT: 'WARNING' },
+  contrast: { GOOD: 'OK', MODERATE: 'OK', LOW: 'WARNING' },
+  clipping: { LOW: 'OK', ELEVATED: 'INFO', HIGH: 'WARNING', SEVERE: 'SEVERE' },
+  sharpness: { NORMAL: 'OK', LOW: 'WARNING', VERY_LOW: 'WARNING' },
+  noise: { LOW: 'OK', ELEVATED: 'WARNING', HIGH: 'SEVERE' },
+  resolution: { ADEQUATE: 'OK', LOW: 'WARNING', VERY_LOW: 'SEVERE' },
+};
+
+const QUICK = {
+  single: ['Describe the land-cover and major objects visible in this image.', 'How much vegetation cover is present?', 'Highlight the water body referred to in the query.', 'Highlight the built-up area in this image.'],
+  bitemporal: ['What changed between these two dates, and where did the change occur?', 'Has the built-up area increased, decreased, or remained unchanged?', 'Has the water coverage increased, decreased, or remained unchanged?'],
+  cross: ['Use the optical and SAR images together to identify built-up and water-covered regions.', 'How much of the scene is water according to both sensors?'],
+};
+const SLOTS = {
+  single: [{ id: 'image', label: 'Image', hint: 'PNG, JPEG or 8-bit GeoTIFF' }],
+  bitemporal: [{ id: 'time_a', label: 'Time A — earlier', hint: 'Same area as Time B' }, { id: 'time_b', label: 'Time B — later', hint: 'Same area as Time A' }],
+  cross: [{ id: 'optical', label: 'Optical image', hint: 'RGB composite' }, { id: 'sar', label: 'SAR image', hint: 'Single-channel amplitude / backscatter rendering' }],
+};
+
+const S = {
+  mode: 'single', files: {}, caps: null, busy: false, view: 'analysis',
+  result: null, tab: 'overview', layer: null, cell: null, zoom: false, evLayer: 'evidence_grid',
+};
+
+/* ───────────── bootstrap ───────────── */
+async function boot() {
+  const pill = $('#apiPill'), txt = $('#apiText');
+  try {
+    const [hr, cr] = await Promise.all([fetch('/api/health'), fetch('/api/capabilities')]);
+    if (!hr.ok || !cr.ok) throw new Error('bad status');
+    const health = await hr.json();
+    S.caps = await cr.json();
+    pill.classList.add('ok'); txt.textContent = `API online · engine ${health.engine_version}`;
+    const sel = $('#optGrid');
+    for (let n = S.caps.limits.min_grid_size; n <= S.caps.limits.max_grid_size; n++) sel.append(new Option(`${n} × ${n}`, n, false, n === S.caps.parameters.change_parameters.grid_size));
+  } catch (e) {
+    pill.classList.add('bad'); txt.textContent = 'API unreachable';
+  }
+  setMode('single');
+}
+
+/* ───────────── inputs ───────────── */
+function setMode(m) {
+  S.mode = m; S.files = {};
+  document.querySelectorAll('#modeSeg button').forEach(b => b.classList.toggle('active', b.dataset.mode === m));
+  $('#optsBox').classList.toggle('hidden', m !== 'bitemporal');
+  renderSlots(); renderChips(); S.result = null; renderWork(); syncButtons();
+}
+function renderChips() {
+  const box = $('#chips'); box.replaceChildren();
+  for (const q of QUICK[S.mode]) { const c = h('button', 'chip', q); c.type = 'button'; c.onclick = () => { $('#query').value = q; }; box.append(c); }
+}
+function renderSlots() {
+  const box = $('#slots'); box.replaceChildren();
+  for (const cfg of SLOTS[S.mode]) {
+    const drop = h('label', 'drop');
+    const input = h('input'); input.type = 'file'; input.accept = 'image/png,image/jpeg,image/tiff,.tif,.tiff';
+    const info = h('div', 'meta', h('b', null, 'Click or drop a file'), h('span', 'faint', 'PNG · JPEG · GeoTIFF'));
+    drop.append(input, h('div', 'ph', '＋'), info);
+    const err = h('div', 'slot-err hidden');
+    input.onchange = () => input.files[0] && loadFile(input.files[0], cfg, drop, err);
+    drop.ondragover = e => { e.preventDefault(); drop.classList.add('over'); };
+    drop.ondragleave = () => drop.classList.remove('over');
+    drop.ondrop = e => { e.preventDefault(); drop.classList.remove('over'); e.dataTransfer.files[0] && loadFile(e.dataTransfer.files[0], cfg, drop, err); };
+    box.append(h('div', 'slot', h('div', 'slot-label', cfg.label), h('div', 'slot-hint', cfg.hint), drop, err));
+  }
+}
+function readAsDataURL(blob) { return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(blob); }); }
+function loadImageEl(url) { return new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url; }); }
+
+async function downscale(file, limit) {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await loadImageEl(url);
+    let scale = Math.min(1, 2400 / Math.max(img.width, img.height));
+    for (let attempt = 0; attempt < 8; attempt++) {
+      const w = Math.max(32, Math.round(img.width * scale)), hh = Math.max(32, Math.round(img.height * scale));
+      const c = document.createElement('canvas'); c.width = w; c.height = hh; c.getContext('2d').drawImage(img, 0, 0, w, hh);
+      const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.92));
+      if (blob && blob.size <= limit) return { blob, from: [img.width, img.height], to: [w, hh] };
+      scale *= 0.8;
+    }
+    return null;
+  } catch (e) { return null; } finally { URL.revokeObjectURL(url); }
+}
+
+async function loadFile(file, cfg, drop, err) {
+  err.classList.add('hidden'); delete S.files[cfg.id]; S.result = null; syncButtons();
+  const limits = S.caps ? S.caps.limits : { max_image_bytes: 1600000 };
+  const isTiff = /tiff?$/i.test(file.name) || file.type === 'image/tiff';
+  let blob = file, note = null;
+  if (file.size > limits.max_image_bytes) {
+    if ($('#downscale').checked && !isTiff) {
+      const d = await downscale(file, limits.max_image_bytes);
+      if (!d) { showSlotErr(err, 'Could not downscale this image under the size limit.'); syncButtons(); return; }
+      blob = d.blob; note = { resized_from: d.from, resized_to: d.to };
+    } else {
+      showSlotErr(err, `${mb(file.size)} exceeds the ${mb(limits.max_image_bytes)} per-image limit.${isTiff ? '' : ' Enable browser downscaling or resize the image.'}`);
+      syncButtons(); return;
+    }
+  }
+  const dataUrl = await readAsDataURL(blob);
+  S.files[cfg.id] = { name: file.name, size: blob.size, dataUrl, note, isTiff };
+  drop.classList.add('filled');
+  const thumb = isTiff ? h('div', 'ph', 'TIFF') : Object.assign(h('img'), { src: dataUrl, alt: '' });
+  drop.replaceChildren(drop.querySelector('input'), thumb, h('div', 'meta', h('b', null, file.name), h('span', 'faint', mb(blob.size) + (note ? ` · downscaled ${note.resized_from.join('×')}→${note.resized_to.join('×')}` : ''))));
+  S.result = null; renderWork(); syncButtons();
+}
+function showSlotErr(el, msg) { el.textContent = msg; el.classList.remove('hidden'); }
+function ready() { return SLOTS[S.mode].every(c => S.files[c.id]); }
+function syncButtons() {
+  $('#runBtn').disabled = !ready() || S.busy || !S.caps;
+  $('#checkBtn').disabled = !ready() || S.busy || !S.caps;
+}
+
+/* ───────────── requests ───────────── */
+function parseThresholds() {
+  const nums = $('#optThr').value.split(',').map(s => s.trim()).filter(Boolean).map(Number);
+  if (nums.some(n => !Number.isInteger(n))) throw new Error('Thresholds must be whole numbers separated by commas.');
+  return nums;
+}
+async function api(path, body) {
+  let res;
+  try { res = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); }
+  catch (e) { return { status: 'ERROR', ok: false, error: { code: 'NETWORK', message: 'Could not reach the analysis API. The interface has no offline analysis: it only renders results computed by the backend.' } }; }
+  let data; try { data = await res.json(); } catch (e) { data = { status: 'ERROR', ok: false, error: { code: 'BAD_RESPONSE', message: `The API returned an unreadable response (HTTP ${res.status}).` } }; }
+  data._http = res.status; return data;
+}
+async function run() {
+  if (!ready()) return;
+  const query = $('#query').value.trim();
+  if (!query) { S.result = { status: 'REJECTED_INPUT', ok: false, error: { code: 'EMPTY_QUERY', message: 'Enter a question about the imagery.' } }; renderWork(); return; }
+  const body = { mode: S.mode, query, images: SLOTS[S.mode].map(c => S.files[c.id].dataUrl) };
+  if (S.mode === 'bitemporal') {
+    try { body.options = { grid_size: Number($('#optGrid').value), base_threshold: Number($('#optBase').value), thresholds: parseThresholds() }; }
+    catch (e) { S.result = { status: 'REJECTED_INPUT', ok: false, error: { code: 'INVALID_OPTIONS', message: e.message } }; renderWork(); return; }
+  }
+  const notes = SLOTS[S.mode].map((c, i) => S.files[c.id].note ? { index: i, ...S.files[c.id].note } : null).filter(Boolean);
+  if (notes.length) body.client_notes = notes;
+  setBusy(true);
+  S.result = await api('/api/analyze', body);
+  S.tab = 'overview'; S.cell = null; S.zoom = false; S.evLayer = 'evidence_grid'; S.layer = null;
+  setBusy(false); renderWork();
+}
+async function check() {
+  if (!ready()) return;
+  setBusy(true);
+  const r = await api('/api/diagnostics', { images: SLOTS[S.mode].map(c => S.files[c.id].dataUrl) });
+  r._diagOnly = true; S.result = r; S.tab = 'quality'; setBusy(false); renderWork();
+}
+function setBusy(b) {
+  S.busy = b; syncButtons();
+  $('#runBtn').replaceChildren(...(b ? [h('span', 'spinner'), 'Analysing…'] : ['Run analysis']));
+  if (b) $('#work').replaceChildren(h('div', 'empty', h('h2', null, 'Analysing'), h('p', null, 'Validating inputs, running diagnostics and the analysis engine…')));
+}
+
+/* ───────────── rendering: workspace ───────────── */
+function renderWork() {
+  const w = $('#work'); w.replaceChildren();
+  if (S.view === 'stac') { renderStac(w); return; }
+  const r = S.result;
+  if (!r) { w.append(emptyState()); return; }
+  if (r._diagOnly) {
+    if (!r.ok) { w.append(failureBanner(r)); return; }
+    w.append(h('div', 'banner info', h('h3', null, 'Input check'), h('div', 'muted', 'Diagnostics only — no analysis was run.')));
+    w.append(renderQuality(r)); return;
+  }
+  if (!r.ok) { renderFailure(w, r); return; }
+  w.append(h('div', 'chiprow', badge(r.status, r.status.replace(/_/g, ' ')), h('span', 'badge', 'task: ' + r.task_label), h('span', 'badge mono', 'analysis ' + r.analysis_id.slice(0, 12))));
+  const bar = h('div', 'tabs');
+  for (const [id, label] of tabList(r)) { const b = h('button', S.tab === id ? 'active' : '', label); b.onclick = () => { S.tab = id; renderWork(); }; bar.append(b); }
+  w.append(h('div', null, bar));
+  const body = { overview: renderOverview, evidence: renderEvidence, quality: renderQuality, sensitivity: renderSensitivity, layers: renderLayers, method: renderMethod, report: renderReport }[S.tab] || renderOverview;
+  w.append(body(r));
+  w.append(renderTrace(r));
+}
+function tabList(r) {
+  const t = [['overview', 'Overview']];
+  if (r.evidence && r.evidence.spatial_evidence) t.push(['evidence', 'Evidence']);
+  t.push(['quality', 'Quality']);
+  if (r.evidence && r.evidence.sensitivity) t.push(['sensitivity', 'Sensitivity']);
+  t.push(['layers', 'Layers'], ['method', 'Methodology'], ['report', 'Report']);
+  if (!t.some(([id]) => id === S.tab)) S.tab = 'overview';
+  return t;
+}
+function emptyState() {
+  return h('div', 'empty', h('h2', null, 'Ask a question of your imagery'),
+    h('p', null, 'Upload an image or a pair, ask in plain language, and get a result with its evidence, diagnostics and limitations.'),
+    h('ul', 'list', h('li', null, 'Bi-temporal pairs are checked for quality, alignment and threshold sensitivity before any change is reported.'),
+      h('li', null, 'Questions the input cannot support (e.g. NDVI from RGB, hectares without georeferencing) are explained, not guessed.'),
+      h('li', null, 'Everything shown is computed by the backend; this interface adds no interpretation of its own.')));
+}
+
+/* ───────────── failure states ───────────── */
+function failureBanner(r) {
+  const kind = r.status === 'ERROR' ? 'err' : (r.status === 'UNAVAILABLE_CAPABILITY' || r.status === 'INSUFFICIENT_INPUT') ? 'info' : 'warn';
+  const title = ({ REJECTED_INPUT: 'Input rejected', UNAVAILABLE_CAPABILITY: 'Not possible with this input', INSUFFICIENT_INPUT: 'More input needed', ERROR: 'Analysis failed' })[r.status] || 'Not completed';
+  return h('div', 'banner ' + kind, h('h3', null, title), h('div', null, r.answer || (r.error && r.error.message) || 'The request was not completed.'), r.error ? h('div', 'mono faint', 'code: ' + r.error.code) : null);
+}
+function renderFailure(w, r) {
+  w.append(failureBanner(r));
+  if (r.unmet_requirements) {
+    const c = h('div', 'card', h('h2', null, 'What is missing'));
+    for (const u of r.unmet_requirements) c.append(h('div', 'report-sec', h('h3', null, u.requested), h('dl', 'kv', h('dt', null, 'requires'), h('dd', null, u.requires), h('dt', null, 'available'), h('dd', null, u.available))));
+    if (r.supported_alternatives && r.supported_alternatives.length) c.append(h('h3', null, 'What you can do instead'), h('ul', 'list', r.supported_alternatives.map(a => h('li', null, a))));
+    w.append(c);
+  }
+  if (r.geospatial) w.append(h('div', 'card', h('h2', null, 'File metadata (inspected without decoding pixels)'), geoCard(r.geospatial)));
+  if (r.diagnostics) w.append(renderQuality(r));
+  if (r.trace) w.append(renderTrace(r));
+}
+
+/* ───────────── Overview ───────────── */
+function renderOverview(r) {
+  const root = h('div'), rel = r.reliability, ev = r.evidence;
+  root.append(h('div', 'card', h('div', 'answer', r.answer),
+    h('div', 'chiprow',
+      h('span', 'badge b-' + rel.level, 'evidence level: ' + rel.level),
+      h('span', 'badge', 'suitability: ' + humanize(r.diagnostics.suitability.decision)),
+      r.diagnostics.alignment && r.diagnostics.alignment.state !== 'NOT_ASSESSED' ? h('span', 'badge b-' + r.diagnostics.alignment.state, 'alignment: ' + humanize(r.diagnostics.alignment.state)) : null)));
+  if (ev && ev.measurements && ev.concentration) {
+    const m = ev.measurements, c = ev.concentration, s = ev.sensitivity;
+    root.append(h('div', 'tiles',
+      tile('Changed pixels', pct(m.changed_pct), `${m.changed_pixels.toLocaleString()} of ${m.analysed_pixels.toLocaleString()}`),
+      tile('Distribution', humanize(c.pattern), c.scattered ? 'scattered pixels' : c.dominant_cell ? 'top cell ' + c.dominant_cell : ''),
+      tile('Threshold range', `${pct(s.changed_pct_min)}–${pct(s.changed_pct_max)}`, `${humanize(s.sensitivity_level)} sensitivity`),
+      tile('Stable change', pct(ev.stability.stable_pct), `${pct(ev.stability.ambiguous_pct)} ambiguous`)));
+  } else if (ev && ev.class_percentages) {
+    const card = h('div', 'card', h('h2', null, 'Measured class shares (colour-rule estimate, % of pixels)'));
+    for (const k of ['water', 'vegetation', 'built-up', 'bare soil', 'other']) if (ev.class_percentages[k] != null) card.append(barRow(k, ev.class_percentages[k], 100));
+    root.append(card);
+  }
+  const cols = h('div', 'cols2'), left = h('div'), right = h('div');
+  const pick = (r.layers || []).find(l => ['combined', 'fused', 'overlay', 'original'].includes(l.id));
+  if (pick) left.append(h('div', 'card', h('h2', null, pick.label), makeViewer(pick, {}), h('div', 'caption', pick.description)));
+  if (ev && ev.statements) right.append(h('div', 'card', h('h2', null, 'Findings (generated from measurements)'),
+    h('ul', 'statements', ev.statements.map(s => h('li', null, s.text, h('span', 'basis', 'basis: ' + JSON.stringify(s.basis).slice(0, 160)))))));
+  right.append(h('div', 'card', h('h2', null, 'What could make this unreliable'),
+    rel.concerns.length ? h('ul', 'list', rel.concerns.map(c => h('li', null, c))) : h('p', 'muted', 'No implemented diagnostic raised a concern. This does not mean the result is correct.'),
+    h('div', 'callout', rel.confidence_note)));
+  right.append(h('div', 'card', h('h2', null, 'Limitations'), h('ul', 'list', r.limitations.slice(0, 5).map(l => h('li', null, l))), h('div', 'caption', 'Full list under Methodology.')));
+  cols.append(left, right); root.append(cols); return root;
+}
+function tile(k, v, s) { return h('div', 'tile', h('div', 'k', k), h('div', 'v', v), h('div', 's', s || '')); }
+function barRow(label, value, max, cls) {
+  return h('div', 'bar-row', h('span', null, label), h('div', 'bar-track', Object.assign(h('div', 'bar-fill ' + (cls || '')), { style: `width:${Math.max(0, Math.min(100, value / max * 100))}%` })), h('span', null, pct(value)));
+}
+
+/* ───────────── Viewer with grid overlay + zoom ───────────── */
+function makeViewer(layer, opts) {
+  const wrap = h('div', 'viewer' + (opts.zoomCell ? ' zoomed' : ''));
+  const inner = h('div', 'viewer-inner'); inner.style.aspectRatio = `${layer.width} / ${layer.height}`;
+  const img = h('img'); img.src = layer.data; img.alt = layer.label; inner.append(img);
+  if (opts.cells) {
+    const svg = document.createElementNS(NS, 'svg'); svg.setAttribute('viewBox', `0 0 ${layer.width} ${layer.height}`); svg.setAttribute('preserveAspectRatio', 'none');
+    for (const c of opts.cells) {
+      const [x0, y0, x1, y1] = c.bbox_px;
+      const rect = document.createElementNS(NS, 'rect');
+      rect.setAttribute('x', x0); rect.setAttribute('y', y0); rect.setAttribute('width', x1 - x0); rect.setAttribute('height', y1 - y0);
+      rect.setAttribute('class', 'cell' + (c.region_id === opts.activeId ? ' active' : ''));
+      const t = document.createElementNS(NS, 'title'); t.textContent = `${c.region_id}: ${pct(c.change_percentage)} changed · ${c.evidence_strength}`; rect.append(t);
+      rect.onclick = () => opts.onSelect(c.region_id);
+      svg.append(rect);
+    }
+    inner.append(svg);
+  }
+  if (opts.zoomCell) {
+    const [x0, y0, x1, y1] = opts.zoomCell.bbox_norm;
+    const s = Math.max(1, Math.min(8, 0.9 / Math.max(x1 - x0, y1 - y0)));
+    inner.style.transform = `translate(${(0.5 - s * (x0 + x1) / 2) * 100}%, ${(0.5 - s * (y0 + y1) / 2) * 100}%) scale(${s})`;
+  }
+  wrap.append(inner); return wrap;
+}
+
+/* ───────────── Evidence ───────────── */
+function renderEvidence(r) {
+  const ev = r.evidence, grid = ev.spatial_evidence, layers = r.layers || [];
+  const layer = layers.find(l => l.id === S.evLayer) || layers.find(l => l.id === 'evidence_grid') || layers[0];
+  const cell = grid.cells.find(c => c.region_id === S.cell) || null;
+  const root = h('div', 'cols2');
+  const left = h('div', 'card', h('h2', null, 'Spatial evidence — click a cell'));
+  const lb = h('div', 'layer-btns');
+  for (const l of layers) { const b = h('button', l.id === layer.id ? 'active' : '', l.label); b.onclick = () => { S.evLayer = l.id; renderWork(); }; lb.append(b); }
+  left.append(lb, makeViewer(layer, { cells: grid.cells, activeId: S.cell, zoomCell: S.zoom ? cell : null, onSelect: id => { S.cell = id; renderWork(); } }));
+  const zb = h('button', 'btn small', S.zoom ? 'Reset zoom' : 'Zoom to cell'); zb.disabled = !cell; zb.style.marginTop = '10px'; zb.onclick = () => { S.zoom = !S.zoom; renderWork(); };
+  left.append(h('div', null, zb), h('div', 'caption', layer.description));
+  const c = ev.concentration, right = h('div');
+  right.append(inspector(cell, grid));
+  right.append(h('div', 'card', h('h2', null, 'Distribution of change'),
+    h('dl', 'kv', h('dt', null, 'pattern'), h('dd', null, humanize(c.pattern)), h('dt', null, 'top cell share'), h('dd', null, pct(c.top_cell_share * 100)), h('dt', null, 'top 3 share'), h('dd', null, pct(c.top3_share * 100)),
+      h('dt', null, 'entropy (norm.)'), h('dd', null, fmt(c.normalised_entropy, 2)), h('dt', null, 'cohesion'), h('dd', null, fmt(c.spatial_cohesion, 2)), h('dt', null, 'centroid'), h('dd', null, c.centroid_phrase || '—')),
+    h('div', 'caption', c.rules || '')));
+  const t = h('table', null, h('thead', null, h('tr', null, h('th', null, 'cell'), h('th', 'num', 'changed'), h('th', 'num', 'retention'), h('th', null, 'strength')))), tb = h('tbody');
+  for (const x of [...grid.cells].sort((a, b) => b.change_percentage - a.change_percentage).slice(0, 10)) {
+    const tr = h('tr', 'row-click' + (x.region_id === S.cell ? ' sel' : ''), h('td', 'mono', x.region_id), h('td', 'num', pct(x.change_percentage)), h('td', 'num', x.retention_at_strictest == null ? '—' : pct(x.retention_at_strictest * 100, 0)), h('td', null, badge(x.evidence_strength)));
+    tr.onclick = () => { S.cell = x.region_id; renderWork(); }; tb.append(tr);
+  }
+  t.append(tb);
+  right.append(h('div', 'card', h('h2', null, 'Cells ranked by change'), t, h('div', 'caption', grid.evidence_strength_rule)));
+  root.append(left, right); return root;
+}
+function inspector(cell, grid) {
+  const card = h('div', 'card', h('h2', null, 'Region inspector'));
+  if (!cell) { card.append(h('p', 'muted', 'Select a grid cell on the image or in the table to see its measured statistics, threshold stability and quality caution.')); return card; }
+  const q = cell.local_quality;
+  card.append(h('div', 'chiprow', h('span', 'badge mono', cell.region_id), badge(cell.evidence_strength), cell.quality_warning ? badge('CONCERN', 'quality caution') : null));
+  card.append(h('p', null, cell.interpretation));
+  card.append(h('dl', 'kv',
+    h('dt', null, 'bbox (px)'), h('dd', null, `[${cell.bbox_px.join(', ')}]`),
+    h('dt', null, 'analysed pixels'), h('dd', null, cell.analysed_pixel_count.toLocaleString()),
+    h('dt', null, 'changed pixels'), h('dd', null, `${cell.changed_pixel_count.toLocaleString()} (${pct(cell.change_percentage)})`),
+    h('dt', null, 'share of all change'), h('dd', null, pct(cell.share_of_total_change_pct)),
+    h('dt', null, 'mean / p95 |A−B|'), h('dd', null, `${fmt(cell.mean_abs_difference)} / ${fmt(cell.p95_abs_difference)}`),
+    h('dt', null, `stable (> ${grid.strictest_threshold})`), h('dd', null, `${cell.stable_changed_pixels.toLocaleString()} px · retention ${cell.retention_at_strictest == null ? '—' : pct(cell.retention_at_strictest * 100, 0)}`),
+    h('dt', null, 'ambiguous'), h('dd', null, cell.ambiguous_pixels.toLocaleString() + ' px'),
+    h('dt', null, 'clipped A / B'), h('dd', null, `${pct(q.clipped_pct_a)} / ${pct(q.clipped_pct_b)}`),
+    h('dt', null, 'contrast σ A / B'), h('dd', null, `${fmt(q.contrast_std_a)} / ${fmt(q.contrast_std_b)}`),
+    h('dt', null, 'sharpness A / B'), h('dd', null, `${fmt(q.sharpness_a)} / ${fmt(q.sharpness_b)}`)));
+  card.append(h('div', 'callout', `Evidence type: ${humanize(cell.evidence_type)} — |A−B| on gray = mean(R,G,B), counted where it exceeds ${grid.base_threshold}. Stability is measured at the strictest tested threshold (${grid.strictest_threshold}).`));
+  return card;
+}
+
+/* ───────────── Quality ───────────── */
+function renderQuality(r) {
+  const d = r.diagnostics, root = h('div'), dec = d.suitability;
+  root.append(h('div', 'card', h('h2', null, 'Suitability'), h('div', 'chiprow', badge(dec.decision, humanize(dec.decision))),
+    dec.reasons.length ? h('ul', 'list', dec.reasons.map(x => h('li', null, x))) : h('p', 'muted', 'No concerns raised by quality or alignment diagnostics.'),
+    h('div', 'caption', dec.rule)));
+  const cols = h('div', 'cols2'), a = h('div'), b = h('div');
+  d.quality.forEach((q, i) => a.append(qualityCard(q, d.quality.length > 1 ? `Image ${i + 1}` : 'Image')));
+  if (d.alignment) b.append(alignmentCard(d.alignment));
+  (r.inputs || []).forEach(inp => b.append(h('div', 'card', h('h2', null, `Geospatial metadata — ${inp.role || 'input ' + (inp.index + 1)}`), inp.geospatial ? geoCard(inp.geospatial) : h('p', 'muted', inp.geospatial_error || 'No georeferencing metadata (' + inp.format + '). Spatial correspondence is assumed, not verified, and no ground measurements are possible.'))));
+  if (d.geospatial_pair) b.append(h('div', 'card', h('h2', null, 'Geospatial pair check'), h('div', 'chiprow', badge(d.geospatial_pair.state)), h('ul', 'list', d.geospatial_pair.findings.map(f => h('li', null, `[${f.severity}] ${f.message}`))), h('div', 'caption', d.geospatial_pair.scope)));
+  cols.append(a, b); root.append(cols); return root;
+}
+function qualityCard(q, title) {
+  const m = q.metrics, card = h('div', 'card', h('h2', null, title + ' quality'), h('div', 'chiprow', badge(q.overall)));
+  card.append(h('div', 'chiprow', Object.entries(q.levels).map(([k, v]) => h('span', 'badge b-' + ((LEVEL_CLASS[k] || {})[v] || 'INFO'), `${k}: ${humanize(v)}`))));
+  card.append(h('dl', 'kv', h('dt', null, 'original size'), h('dd', null, `${m.original_width} × ${m.original_height} (${fmt(m.original_megapixels, 2)} MP)`),
+    h('dt', null, 'working size'), h('dd', null, `${m.working_width} × ${m.working_height}`),
+    h('dt', null, 'brightness mean'), h('dd', null, fmt(m.brightness_mean, 0) + ' / 255'), h('dt', null, 'contrast σ'), h('dd', null, fmt(m.contrast_std)),
+    h('dt', null, 'clipped dark / bright'), h('dd', null, `${pct(m.clipped_dark_pct)} / ${pct(m.clipped_bright_pct)}`),
+    h('dt', null, 'sharpness (Lap. var.)'), h('dd', null, fmt(m.sharpness_laplacian_variance)), h('dt', null, 'edge density'), h('dd', null, pct(m.edge_density_pct)),
+    h('dt', null, 'noise σ (est.)'), h('dd', null, fmt(m.noise_sigma_estimate)), h('dt', null, 'grayscale'), h('dd', null, m.is_grayscale ? 'yes' : 'no')));
+  if (q.flags.length) card.append(h('ul', 'list', q.flags.map(f => h('li', null, `[${f.severity}] ${f.message}${f.implication ? ' — ' + f.implication : ''}`))));
+  card.append(h('div', 'caption', q.interpretation_note)); return card;
+}
+function alignmentCard(a) {
+  const card = h('div', 'card', h('h2', null, 'Temporal alignment'), h('div', 'chiprow', badge(a.state)));
+  if (a.dx_px != null) card.append(h('dl', 'kv', h('dt', null, 'dx / dy (px)'), h('dd', null, `${a.dx_px >= 0 ? '+' : ''}${fmt(a.dx_px, 2)} / ${a.dy_px >= 0 ? '+' : ''}${fmt(a.dy_px, 2)}`),
+    h('dt', null, 'magnitude'), h('dd', null, fmt(a.magnitude_px, 2) + ' px'), h('dt', null, 'correlation peak'), h('dd', null, fmt(a.peak_correlation, 3)),
+    h('dt', null, 'NCC before / after'), h('dd', null, `${fmt(a.ncc_unshifted, 2)} / ${fmt(a.ncc_aligned, 2)}`), h('dt', null, 'valid overlap'), h('dd', null, pct(a.valid_overlap_fraction * 100, 1)),
+    h('dt', null, 'working grid'), h('dd', null, a.working_grid ? a.working_grid.join(' × ') : '—')));
+  card.append(h('ul', 'list', a.reasons.map(x => h('li', null, x))), h('div', 'callout', a.limitation)); return card;
+}
+function geoCard(g) {
+  const rows = [['format', g.format], ['size', `${g.width} × ${g.height}, ${g.band_count} band(s), bits ${g.bits_per_sample.join('/')}`], ['georeferenced', g.georeferenced ? 'yes (' + g.georeferencing + ')' : 'no'],
+    ['CRS', g.crs.epsg ? `EPSG:${g.crs.epsg} (${g.crs.kind}, ${g.crs.units})` : g.crs.user_defined ? 'user-defined' : 'not specified'],
+    ['pixel size', g.pixel_size ? `${g.pixel_size.x} × ${g.pixel_size.y} ${g.pixel_size.units}` : '—'],
+    ['bounds (native)', g.bounds_native ? `W ${g.bounds_native.west} S ${g.bounds_native.south} E ${g.bounds_native.east} N ${g.bounds_native.north}` : '—'],
+    ['bounds (WGS84)', g.bounds_wgs84 ? `W ${fmt(g.bounds_wgs84.west, 5)} S ${fmt(g.bounds_wgs84.south, 5)} E ${fmt(g.bounds_wgs84.east, 5)} N ${fmt(g.bounds_wgs84.north, 5)}` : 'not derived'],
+    ['NoData', g.nodata == null ? '—' : g.nodata], ['layout', `${g.tiled ? 'tiled' : 'striped'}, ${g.overview_count} overview(s)${g.cog_like_layout ? ' · COG-like (unvalidated)' : ''}`],
+    ['pixel analysis', g.pixel_analysis_supported ? 'supported' : 'not supported']];
+  const dl = h('dl', 'kv'); for (const [k, v] of rows) dl.append(h('dt', null, k), h('dd', null, v));
+  const box = h('div', null, dl);
+  if (!g.pixel_analysis_supported) box.append(h('div', 'callout', g.pixel_analysis_unsupported_reason));
+  if (g.notes && g.notes.length) box.append(h('ul', 'list', g.notes.map(n => h('li', null, n))));
+  box.append(h('div', 'caption', g.scope_note)); return box;
+}
+
+/* ───────────── Sensitivity ───────────── */
+function renderSensitivity(r) {
+  const s = r.evidence.sensitivity, st = r.evidence.stability, nf = r.evidence.noise_floor, rad = r.evidence.radiometric;
+  const root = h('div', 'cols2'), left = h('div'), right = h('div');
+  const bars = h('div', 'card', h('h2', null, 'Changed area across thresholds'));
+  const max = Math.max(...s.thresholds.map(t => t.changed_pct), 1);
+  for (const t of s.thresholds) bars.append(h('div', 'bar-row', h('span', null, `> ${t.threshold}${t.is_base ? ' ●' : ''}`), h('div', 'bar-track', Object.assign(h('div', 'bar-fill' + (t.is_base ? ' base' : '')), { style: `width:${t.changed_pct / max * 100}%` })), h('span', null, pct(t.changed_pct))));
+  bars.append(h('div', 'chiprow', badge(s.sensitivity_level), h('span', 'badge mono', 'index ' + fmt(s.sensitivity_index, 2))), h('div', 'caption', `${s.definition}. ${s.level_rule}. ● = base threshold.`));
+  const tbl = h('table', null, h('thead', null, h('tr', null, h('th', 'num', 'threshold'), h('th', 'num', 'changed px'), h('th', 'num', 'changed %'), h('th', 'num', 'Δ vs base (pp)'), h('th', 'num', 'IoU vs base')))), tb = h('tbody');
+  for (const t of s.thresholds) tb.append(h('tr', null, h('td', 'num', t.threshold), h('td', 'num', t.changed_pixels.toLocaleString()), h('td', 'num', fmt(t.changed_pct, 2)), h('td', 'num', (t.delta_vs_base_pp >= 0 ? '+' : '') + fmt(t.delta_vs_base_pp, 2)), h('td', 'num', fmt(t.iou_with_base, 3))));
+  tbl.append(tb); left.append(bars, h('div', 'card', tbl));
+  const unc = (r.layers || []).find(l => l.id === 'uncertain');
+  if (unc) left.append(h('div', 'card', h('h2', null, unc.label), makeViewer(unc, {}), h('div', 'caption', unc.description)));
+  right.append(h('div', 'card', h('h2', null, 'Stable vs ambiguous change'),
+    h('dl', 'kv', h('dt', null, 'stable'), h('dd', null, `${st.stable_pixels.toLocaleString()} px (${pct(st.stable_pct, 2)})`), h('dt', null, 'ambiguous'), h('dd', null, `${st.ambiguous_pixels.toLocaleString()} px (${pct(st.ambiguous_pct, 2)})`),
+      h('dt', null, 'base retained'), h('dd', null, st.retention_of_base == null ? '—' : pct(st.retention_of_base * 100, 1)), h('dt', null, 'ambiguous share'), h('dd', null, st.ambiguous_share_of_all_changed == null ? '—' : pct(st.ambiguous_share_of_all_changed * 100, 1))),
+    h('div', 'callout', st.note)));
+  right.append(h('div', 'card', h('h2', null, 'Noise floor'), h('dl', 'kv', h('dt', null, 'σ A / B'), h('dd', null, `${fmt(nf.sigma_a)} / ${fmt(nf.sigma_b)}`), h('dt', null, 'σ of |A−B|'), h('dd', null, fmt(nf.sigma_difference)), h('dt', null, 'threshold ÷ σ'), h('dd', null, nf.threshold_over_sigma == null ? '—' : fmt(nf.threshold_over_sigma, 1) + ` (need ≥ ${nf.required_multiple})`)),
+    nf.threshold_within_noise ? h('div', 'callout', 'The base threshold is within the estimated noise: some detected change may be noise.') : null, h('div', 'caption', nf.note)));
+  right.append(h('div', 'card', h('h2', null, 'Radiometric offset'), h('dl', 'kv', h('dt', null, 'median B−A'), h('dd', null, fmt(rad.median_signed_difference, 2) + ' gray levels'), h('dt', null, 'changed after removing offset'), h('dd', null, pct(rad.offset_corrected_changed_pct, 2))), h('div', 'caption', rad.note)));
+  root.append(left, right); return root;
+}
+
+/* ───────────── Layers (switcher + before/after compare) ───────────── */
+function renderLayers(r) {
+  const layers = r.layers || [], root = h('div', 'card', h('h2', null, 'Visual layers (switch without re-running the analysis)'));
+  const before = layers.find(l => l.id === 'before'), after = layers.find(l => l.id === 'after');
+  const entries = layers.map(l => [l.id, l]);
+  if (before && after) entries.push(['compare', { id: 'compare', label: 'Before / after slider', description: 'Drag the handle to compare Time A (left) with Time B (right) on the same grid.' }]);
+  const cur = entries.some(([id]) => id === S.layer) ? S.layer : entries[0][0]; S.layer = cur;
+  const lb = h('div', 'layer-btns');
+  for (const [id, l] of entries) { const b = h('button', id === cur ? 'active' : '', l.label); b.onclick = () => { S.layer = id; renderWork(); }; lb.append(b); }
+  root.append(lb);
+  const l = entries.find(([id]) => id === cur)[1];
+  root.append(cur === 'compare' ? compareSlider(before, after) : makeViewer(l, {}), h('div', 'caption', l.description));
+  return root;
+}
+function compareSlider(a, b) {
+  const wrap = h('div', 'compare'); wrap.style.aspectRatio = `${a.width} / ${a.height}`;
+  const base = Object.assign(h('img'), { src: b.data, alt: 'Time B' });
+  const top = h('div', 'top'), ta = Object.assign(h('img'), { src: a.data, alt: 'Time A' }); ta.style.cssText = 'position:absolute;inset:0;width:100%;height:100%'; top.append(ta);
+  const bar = h('div', 'bar'); wrap.append(base, top, bar, h('span', 'tag', 'A'), h('span', 'tag r', 'B'));
+  const set = x => { const p = Math.max(0, Math.min(1, x)); top.style.clipPath = `inset(0 ${(1 - p) * 100}% 0 0)`; bar.style.left = `calc(${p * 100}% - 1px)`; };
+  set(0.5);
+  const move = e => { const bb = wrap.getBoundingClientRect(); set((e.clientX - bb.left) / bb.width); };
+  wrap.addEventListener('pointerdown', e => { wrap.setPointerCapture(e.pointerId); move(e); wrap.onpointermove = move; });
+  wrap.addEventListener('pointerup', () => { wrap.onpointermove = null; });
+  return wrap;
+}
+
+/* ───────────── Methodology ───────────── */
+function renderMethod(r) {
+  const m = r.methodology, root = h('div', 'cols2'), l = h('div'), rt = h('div');
+  l.append(h('div', 'card', h('h2', null, 'Method'), h('h3', null, m.name), h('ol', 'list', m.steps.map(s => h('li', null, s))), h('div', 'caption', 'gray = ' + m.gray_definition)));
+  l.append(h('div', 'card', h('h2', null, 'Parameters used'), h('pre', 'json', JSON.stringify(m.parameters, null, 2))));
+  rt.append(h('div', 'card', h('h2', null, 'Limitations'), h('ul', 'list', r.limitations.map(x => h('li', null, x)))));
+  rt.append(h('div', 'card', h('h2', null, 'Reliability factors'), h('div', 'caption', r.reliability.rule), h('table', null, h('tbody', null, r.reliability.factors.map(f => h('tr', null, h('td', null, h('span', 'mono', f.name)), h('td', null, badge(f.status)), h('td', 'muted', f.detail)))))));
+  rt.append(h('div', 'card', h('h2', null, 'Provenance'), h('dl', 'kv', h('dt', null, 'analysis id'), h('dd', null, r.provenance.analysis_id), h('dt', null, 'engine / schema'), h('dd', null, `${r.engine_version} / ${r.schema_version}`),
+    ...r.provenance.inputs.flatMap(i => [h('dt', null, i.role), h('dd', null, `${i.format} ${i.original_size.join('×')} → ${i.working_size.join('×')} · ${mb(i.bytes)} · sha256 ${i.sha256.slice(0, 20)}…`)])),
+    h('ul', 'list', r.provenance.processing_steps.map(s => h('li', null, s))), h('div', 'caption', r.provenance.replay_note)));
+  root.append(l, rt); return root;
+}
+
+/* ───────────── Report / export ───────────── */
+function download(name, mime, text) { const url = URL.createObjectURL(new Blob([text], { type: mime })); const a = h('a'); a.href = url; a.download = name; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000); }
+function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]); }
+function printableReport(r) {
+  const secs = r.report.sections.map(s => `<section><h2>${esc(s.title)}</h2>${s.paragraphs.map(p => `<p>${esc(p)}</p>`).join('')}${s.bullets.length ? `<ul>${s.bullets.map(b => `<li>${esc(b)}</li>`).join('')}</ul>` : ''}</section>`).join('');
+  const pick = ['before', 'after', 'change_mask', 'evidence_grid', 'uncertain', 'combined', 'original', 'overlay', 'optical', 'sar', 'fused'];
+  const imgs = (r.layers || []).filter(l => pick.includes(l.id)).map(l => `<figure><img src="${l.data}" alt="${esc(l.label)}"><figcaption>${esc(l.label)} — ${esc(l.description)}</figcaption></figure>`).join('');
+  return `<!doctype html><meta charset="utf-8"><title>SatQuery AI Lite report</title><style>body{font:14px/1.5 system-ui,sans-serif;max-width:900px;margin:32px auto;padding:0 20px;color:#111}h1{font-size:22px}h2{font-size:16px;border-bottom:1px solid #ddd;padding-bottom:4px;margin-top:28px}li{margin:3px 0}.q{color:#555}.figs{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}figure{margin:0}img{width:100%;border:1px solid #ccc}figcaption{font-size:12px;color:#555}@media print{section{break-inside:avoid}}</style><h1>SatQuery AI Lite — analysis report</h1><p class="q"><b>Query:</b> ${esc(r.query)}</p><div class="figs">${imgs}</div>${secs}`;
+}
+function renderReport(r) {
+  const root = h('div', 'card', h('h2', null, 'Report')), dl = h('div', 'dl');
+  const add = (label, fn) => { const b = h('button', 'btn small', label); b.onclick = fn; dl.append(b); };
+  const id = r.analysis_id.slice(0, 12);
+  add('Download JSON (full result)', () => download(`satquery-${id}.json`, 'application/json', JSON.stringify(r, null, 2)));
+  add('Markdown', () => download(`satquery-${id}.md`, 'text/markdown', r.report.markdown));
+  if (r.report.regions_csv) add('Regions CSV', () => download(`satquery-${id}-regions.csv`, 'text/csv', r.report.regions_csv));
+  if (r.report.sensitivity_csv) add('Sensitivity CSV', () => download(`satquery-${id}-sensitivity.csv`, 'text/csv', r.report.sensitivity_csv));
+  add('Open printable report', () => { const url = URL.createObjectURL(new Blob([printableReport(r)], { type: 'text/html' })); window.open(url, '_blank'); });
+  root.append(dl, h('p', 'caption', 'Every file is generated from the same backend result shown on screen; the interface adds no content.'));
+  for (const s of r.report.sections) root.append(h('div', 'report-sec', h('h3', null, s.title), s.paragraphs.map(p => h('p', null, p)), s.bullets.length ? h('ul', 'list', s.bullets.map(b => h('li', null, b))) : null));
+  return root;
+}
+function renderTrace(r) {
+  const d = h('details', 'trace', h('summary', null, `Execution trace · ${r.trace.length} steps`));
+  d.append(h('div', 'trace-lines', r.trace.map(t => h('div', null, h('span', 't', t.time), h('span', 'l', t.label), h('span', null, t.detail), h('span', 'ms', r.timings_ms && r.timings_ms[t.label] != null ? r.timings_ms[t.label] + ' ms' : '')))));
+  return d;
+}
+
+/* ───────────── STAC inspector ───────────── */
+function renderStac(w) {
+  const card = h('div', 'card', h('h2', null, 'STAC item inspector'),
+    h('p', 'muted', 'Paste one STAC Item JSON object, or an array of two. Only the metadata you paste is inspected: nothing is fetched and no asset is opened or analysed.'));
+  const ta = h('textarea'); ta.style.minHeight = '180px'; ta.placeholder = '{ "type": "Feature", "id": "…", "properties": { "datetime": "…" }, "assets": { … } }';
+  const sel = h('select'); sel.append(new Option('purpose (two items): change — same modality, two dates', 'change'), new Option('purpose (two items): fusion — optical + SAR', 'fusion')); sel.style.marginTop = '8px';
+  const out = h('div'); out.style.marginTop = '14px';
+  const go = h('button', 'btn primary', 'Inspect'); go.style.marginTop = '8px';
+  go.onclick = async () => {
+    let parsed; try { parsed = JSON.parse(ta.value); } catch (e) { out.replaceChildren(h('div', 'banner err', 'That is not valid JSON.')); return; }
+    const items = Array.isArray(parsed) ? parsed : [parsed];
+    const body = { items }; if (items.length === 2) body.purpose = sel.value;
+    const r = await api('/api/stac/inspect', body);
+    out.replaceChildren(r.ok ? stacResult(r) : h('div', 'banner err', h('h3', null, 'Not inspected'), r.error ? r.error.message : 'Request failed'));
+  };
+  card.append(ta, sel, go, out); w.append(card);
+}
+function stacResult(r) {
+  const root = h('div');
+  for (const it of r.items) {
+    const c = h('div', 'card', h('h2', null, it.id), h('div', 'chiprow', h('span', 'badge', 'modality: ' + it.modality.value), it.cloud_cover_pct != null ? h('span', 'badge', 'cloud ' + pct(it.cloud_cover_pct, 0)) : null),
+      h('dl', 'kv', h('dt', null, 'collection'), h('dd', null, it.collection || '—'), h('dt', null, 'platform'), h('dd', null, it.platform || '—'), h('dt', null, 'datetime'), h('dd', null, it.datetime || it.start_datetime || '—'),
+        h('dt', null, 'bbox'), h('dd', null, it.bbox ? it.bbox.join(', ') : '—'), h('dt', null, 'EPSG'), h('dd', null, it.epsg || '—'), h('dt', null, 'bands'), h('dd', null, it.bands.map(b => b.name).join(', ') || '—'), h('dt', null, 'modality basis'), h('dd', null, it.modality.basis)));
+    c.append(h('table', null, h('thead', null, h('tr', null, h('th', null, 'asset'), h('th', null, 'type'), h('th', null, 'Lite v1'))), h('tbody', null, it.assets.map(a => h('tr', null, h('td', 'mono', a.key), h('td', null, a.type || '—'), h('td', 'muted', a.lite_v1_note))))));
+    if (it.findings.length) c.append(h('ul', 'list', it.findings.map(f => h('li', null, `[${f.severity}] ${f.message}`))));
+    c.append(h('div', 'caption', it.scope_note)); root.append(c);
+  }
+  if (r.comparison) root.append(h('div', 'card', h('h2', null, 'Pair compatibility'), h('div', 'chiprow', badge(r.comparison.state), h('span', 'badge', 'gap ' + (r.comparison.gap_days == null ? '—' : fmt(r.comparison.gap_days, 1) + ' d')), h('span', 'badge', 'bbox IoU ' + (r.comparison.bbox_iou == null ? '—' : fmt(r.comparison.bbox_iou, 2)))), r.comparison.findings.length ? h('ul', 'list', r.comparison.findings.map(f => h('li', null, `[${f.severity}] ${f.message}`))) : h('p', 'muted', 'No compatibility concerns found.')));
+  return root;
+}
+
+/* ───────────── wiring ───────────── */
+document.querySelectorAll('#modeSeg button').forEach(b => b.onclick = () => setMode(b.dataset.mode));
+document.querySelectorAll('.navtabs button').forEach(b => b.onclick = () => {
+  S.view = b.dataset.view; document.querySelectorAll('.navtabs button').forEach(x => x.classList.toggle('active', x === b));
+  $('#side').classList.toggle('hidden', S.view === 'stac'); document.querySelector('main').style.gridTemplateColumns = S.view === 'stac' ? '1fr' : ''; renderWork();
+});
+$('#runBtn').onclick = run; $('#checkBtn').onclick = check;
+$('#resetBtn').onclick = () => { $('#query').value = ''; setMode(S.mode); };
+boot();
+</script>
+</body>
+</html>

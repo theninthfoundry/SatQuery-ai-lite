@@ -1,0 +1,6 @@
+# Deployed serverless backend: lightweight, no GPU, no geospatial C libraries.
+fastapi
+numpy
+pillow
+
+# Development / CI only: see requirements-dev.txt
